@@ -213,36 +213,38 @@ struct ContentView: View {
             .padding(.horizontal)
             
             // --- UPDATED LIST ---
-            
-            // The main file list with selection support
-            List(filteredFiles, id: \.self, selection: $selectedFiles) { file in
-                HStack {
-                    // Folders get a yellow folder icon, files use your color function
-                    Image(systemName: iconFor(file: file))
-                        .foregroundColor(colorForFile(file: file))
-                    // calls color function to set doc colors
-                    Text(file.cleanName)
-                        .lineLimit(1)
-                        .truncationMode(.middle)    // Keeps the beginning of file
-                        .font(.system(.body, design: .monospaced))
-                }
-                 .contentShape(Rectangle()) // Makes the whole row clickable // NEW: Removed
-                
-            
-                
-                // REPLACED: .onTapGesture(count: 2)
-                .simultaneousGesture(TapGesture(count: 2).onEnded {
-                    // Double-click to enter folder
-                    if file.isDirectory {
-                        currentPath = "\(currentPath)/\(file.cleanName)"
-                        // Clear the search bar when entering a new folder
-                        searchText = ""
-                        // Clear the forward histor when manually entering a new folder
-                        forwardHistory.removeAll()
-                        refreshCurrentPath()
-                    }
-                })
-            }
+                        
+                        // The main file list with selection support
+                        List(filteredFiles, id: \.self, selection: $selectedFiles) { file in
+                            HStack {
+                                // Folders get a yellow folder icon, files use your color function
+                                Image(systemName: iconFor(file: file))
+                                    .foregroundColor(colorForFile(file: file))
+                                
+                                Text(file.cleanName)
+                                    .lineLimit(1)
+                                    .truncationMode(.middle)    // Keeps the beginning of file
+                                    .font(.system(.body, design: .monospaced))
+                            }
+                        }
+                        .listStyle(.inset)
+                        .alternatingRowBackgrounds() // Adds native macOS zebra striping
+                        
+                        // The official Apple modifier for macOS List double-clicks!
+                        .contextMenu(forSelectionType: PixelFile.self) { _ in
+                            // We leave the right-click menu empty for now
+                            EmptyView()
+                        } primaryAction: { items in
+                            // This natively fires when a row is double-clicked!
+                            if items.count == 1, let file = items.first {
+                                if file.isDirectory {
+                                    currentPath = "\(currentPath)/\(file.cleanName)"
+                                    searchText = ""
+                                    forwardHistory.removeAll()
+                                    refreshCurrentPath()
+                                }
+                            }
+                        }
             
             
             // Spacer() NEW EDIT: remove to create fixed space
@@ -384,7 +386,7 @@ struct ContentView: View {
                 } // Closes else box
                 
             } // This bracket closes the main HStack
-            .padding(.top, 20)
+            .padding(.top, 15)
             .padding(.bottom, 20)
              
         } // Closes the main VStack
