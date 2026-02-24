@@ -3,10 +3,10 @@ import Foundation
 struct FAQData {
     static let items: [(q: String, a: String)] = [
         (
-            q: "What does 'adb: no devices/emulators found' mean?",
+            q: "What does 'No Device Found' mean?",
             a: """
             
-            ADB cannot detect your phone. Check these three things:
+            MacBridge cannot detect your phone. Check these three things:
             
             •   **Use a Data Transfer Cable:** 
             

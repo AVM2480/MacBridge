@@ -14,7 +14,7 @@ struct PixelFile: Hashable {
 struct ContentView: View {
     // State variables for managing data and UI updates
     @State private var files: [PixelFile] = []
-    @State private var status = "Connected"
+    @State private var status = "Needs Refresh"
     @State private var selectedFiles = Set<PixelFile>()
     @State private var searchText = ""
     @State private var currentPath = "/sdcard/Download"
@@ -47,14 +47,19 @@ struct ContentView: View {
     }
     
     func refreshCurrentPath() {
+        // 1. Instantly trigger the loading state before background work starts
+        
+        self.status = "Loading..."
+        
         selectedFiles.removeAll()
         status = "Loading..."
         
         DispatchQueue.global(qos: .userInitiated).async {
-            watcher.listFiles(at: currentPath) { fetchedFiles in
+            // Catch BOTH the files and the new status
+            watcher.listFiles(at: currentPath) { fetchedFiles, newStatus in
                 DispatchQueue.main.async {
                     self.files = fetchedFiles
-                    self.status = "Connected"
+                    self.status = newStatus // Update UI state
                 }
             }
         }
@@ -229,6 +234,58 @@ struct ContentView: View {
                         }
                         .listStyle(.inset)
                         .alternatingRowBackgrounds() // Adds native macOS zebra striping
+            
+                        // NEW: Overlay Block
+                        .overlay {
+                            if status == "Loading..." {
+                                VStack(spacing: 8) {
+                                    Image(systemName: "progress.indicator")
+                                        .font(.system(.largeTitle, design: .rounded))
+                                    Text("Loading files")
+                                        .font(.title3)
+                                        .bold()
+                                }
+                                .offset(y: -50)
+                                
+                                // State 1: Loading
+                            } else if status == "Needs Refresh" {
+                                        VStack(spacing: 8) {
+                                            Image(systemName: "repeat")
+                                            // or .repeat
+                                                .font(.system(.largeTitle, design: .rounded))
+                                            Text("Refresh for files")
+                                                .font(.title3)
+                                                .bold()
+                                        }
+                                        .offset(y: -50)
+                                
+                            } else if status != "Connected" {
+                                
+                                // State 2: ADB Error / Disconnected
+                                VStack(spacing: 8) {
+                                    Image(systemName: "iphone.gen2.slash")
+                                        .font(.system(.largeTitle, design: .rounded))
+                                    Text(status)
+                                        .font(.title3)
+                                        .bold()
+                                }
+                                //.foregroundColor(.secondary)
+                                .offset(y: -50)
+                                
+                            } else if files.isEmpty && status == "Connected" {
+                                
+                                // Fallback for actual empty folders
+                                VStack(spacing: 8) {
+                                    Image(systemName: "folder.badge.minus")
+                                        .font(.system(.largeTitle, design: .rounded))
+                                    Text("This folder is empty, ya goof!")
+                                        .font(.title3)
+                                        .bold()
+                                    }
+                                //.foregroundColor(.secondary)
+                                .offset(y: -50)
+                            }
+                        }
                         
                         // The official Apple modifier for macOS List double-clicks!
                         .contextMenu(forSelectionType: PixelFile.self) { _ in

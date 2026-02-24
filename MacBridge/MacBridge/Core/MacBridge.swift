@@ -74,14 +74,18 @@ class PixelWatcher {
         }
 
     // Now requires a 'path' and returns an array of 'PixelFile'
-    func listFiles(at path: String, completion: @escaping ([PixelFile]) -> Void) {
+    func listFiles(at path: String, completion: @escaping ([PixelFile], String) -> Void) {
         let process = Process()
+        
+        // Find the ADB executable
         guard let adbPath = getADBPath() else {
             print("CRITICAL ERROR: Bundled ADB binary not found!")
+            // Safely fail and tell UI what went wrong
+            completion([], "ADB Enginge Missing")
             return
         }
+        
         process.executableURL = URL(fileURLWithPath: adbPath)
-
         // The -p flag is the secret to telling files and folders apart
         process.arguments = ["shell", "ls", "-p", "\"\(path)\""]
 
@@ -93,18 +97,36 @@ class PixelWatcher {
 
         let data = pipe.fileHandleForReading.readDataToEndOfFile()
         let output = String(data: data, encoding: .utf8) ?? ""
+        
+        var currentStatus = "Connected"
 
         if output.contains("unauthorized") {
             print("ACTION REQUIRED: Check Pixel for 'Allow USB Debugging'")
-            completion([])
+            completion([], "Action Required: Check Phone for 'Allow USB Debugging'")
             return
+        } else if output.contains("no devices/emulators found") {
+            // Update the status if the device is unplugged
+            currentStatus = "No Device Found"
         }
 
-        // Convert the text output into PixelFile objects
-        let lines = output.components(separatedBy: "\n").filter { !$0.isEmpty }
-        let files = lines.map { line -> PixelFile in
-            return PixelFile(rawName: line, isDirectory: line.hasSuffix("/"))
-        }
+        // Convert the text output into PixelFile objects, filtering out system messages
+                let lines = output.components(separatedBy: "\n")
+                let files = lines.compactMap { line -> PixelFile? in
+                    let cleanLine = line.trimmingCharacters(in: .whitespacesAndNewlines)
+                    let lowercasedLine = cleanLine.lowercased()
+                    
+                    // Ignore empty lines and known ADB system messages
+                    if cleanLine.isEmpty ||
+                       lowercasedLine.hasPrefix("* daemon") ||
+                       lowercasedLine.hasPrefix("adb:") ||
+                       lowercasedLine.hasPrefix("error:") ||
+                       lowercasedLine.hasPrefix("total") {
+                        
+                        return nil // Trash this message, don't make it a file!
+                    }
+                    
+                    return PixelFile(rawName: cleanLine, isDirectory: cleanLine.hasSuffix("/"))
+                }
 
         // Sort folders to the top, files to the bottom
         let sortedFiles = files.sorted {
@@ -112,7 +134,7 @@ class PixelWatcher {
             return $0.isDirectory && !$1.isDirectory
         }
 
-        completion(sortedFiles)
+        completion(sortedFiles, currentStatus)
     } // <--- THIS WAS THE MISSING BRACKET!
 
     // Updated single file download to support custom folders
