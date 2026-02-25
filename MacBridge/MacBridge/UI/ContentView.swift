@@ -26,6 +26,11 @@ struct ContentView: View {
     @State private var isDownloading = false
     @State private var showFAQ = false
     
+    @State private var showingDeleteConfirmation = false
+    @State private var itemsToDelete: [PixelFile] = []
+    @State private var showingFileInfo = false
+    @State private var fileToInspect: PixelFile? = nil
+    
     let watcher = PixelWatcher()
     
     // Computed property to automatically organize folders by date
@@ -287,21 +292,72 @@ struct ContentView: View {
                             }
                         }
                         
-                        // The official Apple modifier for macOS List double-clicks!
-                        .contextMenu(forSelectionType: PixelFile.self) { _ in
-                            // We leave the right-click menu empty for now
-                            EmptyView()
-                        } primaryAction: { items in
-                            // This natively fires when a row is double-clicked!
-                            if items.count == 1, let file = items.first {
-                                if file.isDirectory {
-                                    currentPath = "\(currentPath)/\(file.cleanName)"
-                                    searchText = ""
-                                    forwardHistory.removeAll()
-                                    refreshCurrentPath()
+                        // The official Apple modifier for macOS List double-clicks and right clicks
+                        .contextMenu(forSelectionType: PixelFile.self) { items in
+                            
+                            // If User has right clicked at least one file
+                            if !items.isEmpty {
+                                
+                                // NEW: Get Info Button (Only shows if exactly 1 file is selected
+                                // Note: role: .destructive automatically colors the text red
+                                if items.count == 1, let singleFile = items.first {
+                                    Button {
+                                        fileToInspect = singleFile
+                                        showingFileInfo = true
+                                    } label: {
+                                        Label("Get Info", systemImage: "info.circle")
+                                    }
+                                    
+                                    Divider() // Adds a native macOS separator line!
+                                }
+                                
+                                // Delete Button
+                                Button(role: .destructive) {
+                                    // Store files and create trip-wire
+                                    itemsToDelete = Array(items)
+                                    showingDeleteConfirmation = true
+                                } label: {
+                                    Label("Delete from Device", systemImage: "trash")
                                 }
                             }
-                        }
+                        } primaryAction: { items in
+                            
+                        } // <--  Closes context window
+                        
+                        // The Confirmation Dialog Chain
+                        .confirmationDialog(
+                            "Are you sure you want to these file(s)?",
+                            isPresented: $showingDeleteConfirmation,
+                            titleVisibility: .visible
+                        ) {
+                            Button("Delete Permanently", role: .destructive) {
+                                let pathsToDelete = itemsToDelete.map { "\(currentPath)/\($0.cleanName)" }
+                                
+                                watcher.deleteItems(paths: pathsToDelete) {
+                                    NSSound(named: "Sosumi")?.play()
+                                    self.selectedFiles.removeAll()
+                                    self.refreshCurrentPath()
+                                }
+                            }
+                            
+                            Button("Cancel", role: .cancel) {
+                                itemsToDelete.removeAll()
+                            }
+                        } message: {
+                            Text("This action cannot be undone!")
+                        } // <-- End of .confirmationDialog
+            
+            // The custom "Get Info" pop-up
+                        .alert("File Information", isPresented: $showingFileInfo, presenting: fileToInspect) { _ in
+                            Button("Done", role: .cancel) { }
+                        } message: { file in
+                                        Text("""
+                                        Name: \(file.cleanName)
+                                        Type: \(file.isDirectory ? "Folder" : "File")
+                                        Location: \(currentPath)/\(file.cleanName)
+                                        """)
+                                    }
+                            
             
             
             // Spacer() NEW EDIT: remove to create fixed space

@@ -247,6 +247,37 @@ class PixelWatcher {
         }
     }
     
+    // NEW: DeleteItems function
+    func deleteItems(paths: [String], completion: @escaping () -> Void) {
+        guard let adbPath = getADBPath() else {
+            print("Error: Could not locate adb executable for deletion.")
+            return
+        }
+        
+        // Move work to backgroun so the app stays responsive
+        DispatchQueue.global(qos: .userInitiated).async {
+            for path in paths {
+                let process = Process()
+                process.executableURL = URL(fileURLWithPath: adbPath)
+                
+                // -r allows deleting folders, -f forces it to bypass prompts
+                process.arguments = ["shell", "rm", "-rf", "\"\(path)\""]
+                
+                do {
+                    try process.run()
+                    process.waitUntilExit() // Wait for items to be deleted before moving to next
+                } catch {
+                    print("Failed to delete \(path): \(error)")
+                }
+            }
+            
+            // Move back to main thread when finished
+            DispatchQueue.main.async {
+                completion()
+            }
+        }
+    }
+    
 } // <-- This correctly closes the PixelWatcher class now.
 
 func selectFilesForUpload() -> [URL] {
