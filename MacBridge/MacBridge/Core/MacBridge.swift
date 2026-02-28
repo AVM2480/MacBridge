@@ -87,7 +87,8 @@ class PixelWatcher {
         
         process.executableURL = URL(fileURLWithPath: adbPath)
         // The -p flag is the secret to telling files and folders apart
-        process.arguments = ["shell", "ls", "-p", "\"\(path)\""]
+        // NEW: Argument change, replaced -p with -al
+        process.arguments = ["shell", "ls", "-al", "\"\(path)\""]
 
         let pipe = Pipe()
         process.standardOutput = pipe
@@ -120,13 +121,52 @@ class PixelWatcher {
                        lowercasedLine.hasPrefix("* daemon") ||
                        lowercasedLine.hasPrefix("adb:") ||
                        lowercasedLine.hasPrefix("error:") ||
-                       lowercasedLine.hasPrefix("total") {
+                       lowercasedLine.hasPrefix("total") ||
+                        lowercasedLine.hasPrefix("ls:") { // <-- Fix 1: Catches "No such file or dir" error
                         
                         return nil // Trash this message, don't make it a file!
                     }
                     
-                    return PixelFile(rawName: cleanLine, isDirectory: cleanLine.hasSuffix("/"))
-                }
+                    // Chop the line into 8 COLUMNS (splitting by spaces)
+                    let parts = cleanLine.split(separator: " ", maxSplits: 7, omittingEmptySubsequences: true)
+                        
+                    // Standard Android output has at least 8 columns
+                    if parts.count >= 8 {
+                        let permissions = String(parts[0])
+                        let isDirectory = permissions.hasPrefix("d") || permissions.hasPrefix("l") // Directories start with D, symlinks L
+                        
+                        // NOTE ^ REMEMBER THIS AS EDIT POINT
+                        
+                        // Format the raw bytes into a string
+                        let rawBytes = Int64(parts[4]) ?? 0
+                        let formattedSize = ByteCountFormatter.string(fromByteCount: rawBytes, countStyle: .file)
+                        
+                        let date = "\(parts[5]) \(parts[6])"
+                        // FIX
+                        var name = String(parts[7])
+                        // let name = String(parts[7])
+                        
+                        // FIX 2: SYMLINK CHOPPER ---
+                        // If the name contains an arrow, split the string and only keep the left side
+                        if let arrowString = name.components(separatedBy: " -> ").first {
+                            name = String(arrowString)
+                        }
+                        // --------------------------
+                        
+                        // Skip Android's hidden "." and ".." nav folders
+                        if name == "." || name == ".." { return nil }
+                        
+                        return PixelFile(
+                            cleanName: name,
+                            isDirectory: isDirectory,
+                            size: formattedSize,
+                            date: date,
+                            permissions: permissions
+                            )
+                        }
+                    
+                    return nil // catch-all if a line is malformed
+                } // --- End of conversions 
 
         // Sort folders to the top, files to the bottom
         let sortedFiles = files.sorted {
@@ -199,8 +239,12 @@ class PixelWatcher {
             progressUpdate(currentProgress)
         }
 
-        // If the download finishes naturally and wasn't cancelled, open new folder
-        if !shouldCancel {
+        // NEW: Read the user's preferences directly from Mac storage
+        // default to 'true' to match initial settings window state
+        let shouldOpenFinder = UserDefaults.standard.object(forKey: "openFinder") as? Bool ?? true
+        
+        // If download finishes naturally, wasn't cancelled, and window option is set to open///
+        if !shouldCancel && shouldOpenFinder {
             DispatchQueue.main.async {
                 NSWorkspace.shared.selectFile(nil, inFileViewerRootedAtPath: destinationFolder)
             }
@@ -278,6 +322,65 @@ class PixelWatcher {
         }
     }
     
+    func renameFile(at path: String, oldName: String, newName: String, completion: @escaping () -> Void) {
+        let oldPath = "\(path)/\(oldName)"
+        let newPath = "\(path)/\(newName)"
+        
+        // Use double quptes around the paths to protect against spaces in file names
+        let command = "mv \"\(oldPath)\" \"\(newPath)\""
+        
+        let process = Process()
+        process.executableURL = URL(fileURLWithPath: getADBPath()!)
+        process.arguments = ["shell", command]
+        
+        process.terminationHandler = { _ in
+            DispatchQueue.main.async {
+                completion()
+            }
+        }
+        
+        do {
+            try process.run()
+        } catch {
+            print("Failed to run rename command: \(error)")
+            DispatchQueue.main.async {
+                completion()
+            }
+        }
+    }
+    
+    func previewFile(at path: String, fileName: String, completion: @escaping (Bool) -> Void) {
+            let fullPath = "\(path)/\(fileName)"
+            let tempDir = FileManager.default.temporaryDirectory
+            let tempFileURL = tempDir.appendingPathComponent(fileName)
+            
+            // Clean up any old previews of this exact file so it doesn't get stuck
+            try? FileManager.default.removeItem(at: tempFileURL)
+            
+            let process = Process()
+            process.executableURL = URL(fileURLWithPath: "/opt/homebrew/bin/adb")
+            
+            // Notice we DO NOT use "shell" here! "pull" is a direct adb command.
+            process.arguments = ["pull", fullPath, tempFileURL.path]
+            
+            process.terminationHandler = { _ in
+                DispatchQueue.main.async {
+                    // If the file arrived safely in the Mac's temp folder...
+                    if FileManager.default.fileExists(atPath: tempFileURL.path) {
+                        
+                        // Tell macOS to open it natively!
+                        NSWorkspace.shared.open(tempFileURL)
+                        completion(true)
+                        
+                    } else {
+                        completion(false)
+                    }
+                }
+            }
+            
+            try? process.run()
+        }
+    
 } // <-- This correctly closes the PixelWatcher class now.
 
 func selectFilesForUpload() -> [URL] {
@@ -300,27 +403,9 @@ func selectFilesForUpload() -> [URL] {
     if panel.runModal() == .OK {
         // The user clicks "Upload", return the array of file paths
         return panel.urls
+        
     } else {
         // The user clicks "Cancel" or closes the window
         return[]
-    }
-}
-
-// Ensure this struct is OUTSIDE the PixelWatcher class braces
-@main
-struct MacBridgeApp: App {
-    // 1. Add this init block to force it to behave like a normal app
-    init() {
-        NSApplication.shared.setActivationPolicy(.regular)
-    }
-
-    var body: some Scene {
-        WindowGroup {
-            ContentView()
-                // 2. Add this modifier to steal keyboard focus
-                .onAppear {
-                    NSApplication.shared.activate(ignoringOtherApps: true)
-                }
-        }
     }
 }

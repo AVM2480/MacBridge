@@ -1,15 +1,16 @@
 import SwiftUI
 
-struct PixelFile: Hashable {
-    let rawName: String
+struct PixelFile: Hashable, Identifiable {
+    var id: String { cleanName } // Uses the file name as its unique ID
+    
+    let cleanName: String
     let isDirectory: Bool
 
-    // Removes the trailing slash from folders so it looks clean inside the UI directory
-    var cleanName: String {
-        return isDirectory ? String(rawName.dropLast()) : rawName
-        }
-    }
-
+    // New data for Get Info window
+    var size: String = "Unknown"
+    var date: String = "Unknown"
+    var permissions: String = "Unknown"
+}
 
 struct ContentView: View {
     // State variables for managing data and UI updates
@@ -28,8 +29,19 @@ struct ContentView: View {
     
     @State private var showingDeleteConfirmation = false
     @State private var itemsToDelete: [PixelFile] = []
-    @State private var showingFileInfo = false
     @State private var fileToInspect: PixelFile? = nil
+    
+    // ReNaming States
+    @State private var showingRenameAlert = false
+    @State private var fileToRename: PixelFile? = nil
+    @State private var newFileName = ""
+    
+    @State private var showingPreviewError = false
+    
+    // storage variables for preferences
+    @AppStorage("showHiddenFiles") private var showHiddenFiles = false
+    @AppStorage("playSound") private var playSound = true
+    @AppStorage("openFinder") private var openFinder = true
     
     let watcher = PixelWatcher()
     
@@ -42,10 +54,14 @@ struct ContentView: View {
     }
     
     var filteredFiles: [PixelFile] {
+        // Filter out hidden files if toggle is off
+        let visibleFiles = showHiddenFiles ? files : files.filter { !$0.cleanName.hasPrefix(".") }
+        
+        // Apply the search filter
         if searchText.isEmpty {
-            return files
+            return visibleFiles
         } else {
-            return files.filter { file in
+            return visibleFiles.filter { file in
                 file.cleanName.localizedCaseInsensitiveContains(searchText)
             }
         }
@@ -53,11 +69,9 @@ struct ContentView: View {
     
     func refreshCurrentPath() {
         // 1. Instantly trigger the loading state before background work starts
-        
         self.status = "Loading..."
         
         selectedFiles.removeAll()
-        status = "Loading..."
         
         DispatchQueue.global(qos: .userInitiated).async {
             // Catch BOTH the files and the new status
@@ -69,6 +83,44 @@ struct ContentView: View {
             }
         }
     }
+    
+    func executeUploadProcess() {
+            // 1. Summon the Mac file picker
+            let selectedURLs = selectFilesForUpload()
+            
+            // 2. If the user actually picked files (and didn't hit cancel)
+            if !selectedURLs.isEmpty {
+                
+                // 3. Lock the UI and reset the progress bar
+                isDownloading = true
+                downloadProgress = 0.0
+                
+                // 4. Move to a background thread so the Mac app doesn't freeze!
+                DispatchQueue.global(qos: .userInitiated).async {
+                    
+                    // 5. Fire YOUR exact ADB function!
+                    watcher.uploadFiles(fileURLs: selectedURLs, destinationPath: currentPath) { progress in
+                        // This closure updates the progress bar safely on the main thread
+                        DispatchQueue.main.async {
+                            self.downloadProgress = progress
+                        }
+                    }
+                    
+                    // 6. When the ADB transfer completely finishes and the loop exits...
+                    DispatchQueue.main.async {
+                        // Play the success sound if preference is checked
+                        if playSound {
+                            NSSound(named: "Funk")?.play()
+                        }
+                        
+                        // Unlock the UI and refresh the screen!
+                        self.isDownloading = false
+                        self.refreshCurrentPath()
+                    }
+                }
+            }
+        }
+
     
     func colorForFile(file: PixelFile) -> Color {
         // 1. Check if file is a folder
@@ -97,20 +149,41 @@ struct ContentView: View {
             return "folder.fill"
         }
         
-        // 2. Check extensions for specific fiole types
+        // 2. Check extensions for specific file types
         let lowercased = file.cleanName.lowercased()
         
         if lowercased.hasSuffix(".wav") || lowercased.hasSuffix(".mp3") || lowercased.hasSuffix(".aif") {
             return "waveform"
-        } else if lowercased.hasSuffix("jpg") || lowercased.hasSuffix(".jpeg") || lowercased.hasSuffix(".png") {
+        } else if lowercased.hasSuffix(".jpg") || lowercased.hasSuffix(".jpeg") || lowercased.hasSuffix(".png") {
             return "photo.fill"
         } else if lowercased.hasSuffix(".pdf") {
             return "doc.text.fill"
-        } else if lowercased.hasSuffix("zip") || lowercased.hasSuffix(".rar") {
+        } else if lowercased.hasSuffix(".zip") || lowercased.hasSuffix(".rar") {
             return "doc.zipper"
         } else {
             return "doc.fill"
         }
+    }
+    
+    func isSafeToPreview(sizeString: String) -> Bool {
+        let cleanSize = sizeString.uppercased()
+        
+        // Gigabytes are an instant fail
+        if cleanSize.contains("GB") { return false }
+        
+        // KB and Byets re an auto instant pass
+        if cleanSize.contains("KB") || cleanSize.contains(" B") { return true }
+        
+        // If it's MBs, we need to extract the number and check if it's under 20
+        if cleanSize.contains("MB") {
+            let numberPart = cleanSize.replacingOccurrences(of: " MB", with: "").trimmingCharacters(in: .whitespaces)
+            if let size = Double(numberPart), size <= 20.0 {
+                return true
+            }
+            return false
+        }
+        
+        return false // Defaults to safe blocking if it can't read file size
     }
     
     var body: some View {
@@ -144,8 +217,6 @@ struct ContentView: View {
             }
             .padding(.horizontal)
             
-            
-            
             HStack {
                 // Home Button
                 Button(action: {
@@ -165,13 +236,18 @@ struct ContentView: View {
                 // Back Button
                 Button(action: {
                     // "Go Up" one folder logic
-                    let components = currentPath.split(separator: "/")
-                    if components.count > 1 {
+                    var components = currentPath.split(separator: "/")
+                    if !components.isEmpty {
+                        
                         // Save the current path to the future history BEFORE going back
                         forwardHistory.append(currentPath)
                         
-                        // GO BACK
-                        currentPath = "/" + components.dropLast().joined(separator: "/")
+                        // Chop off ONE folder
+                        components.removeLast()
+                        
+                        // Safely rebuild the path
+                        currentPath = components.isEmpty ? "/" : "/" + components.joined(separator: "/")
+                        
                         // Clear search when leaving a folder
                         searchText = ""
                         refreshCurrentPath()
@@ -182,7 +258,7 @@ struct ContentView: View {
                         .font(.title2)
                         .foregroundColor(.secondary)
                 }
-                .disabled(currentPath == "/sdcard") // Stop the user from going too deep into Android system files
+                .disabled(currentPath == "/" || currentPath.isEmpty) // Stop the user from going too deep into Android system files
                 .buttonStyle(.plain)
                 
                 // FORWARD BUTTON
@@ -223,144 +299,265 @@ struct ContentView: View {
             .padding(.horizontal)
             
             // --- UPDATED LIST ---
-                        
-                        // The main file list with selection support
-                        List(filteredFiles, id: \.self, selection: $selectedFiles) { file in
-                            HStack {
-                                // Folders get a yellow folder icon, files use your color function
-                                Image(systemName: iconFor(file: file))
-                                    .foregroundColor(colorForFile(file: file))
-                                
-                                Text(file.cleanName)
-                                    .lineLimit(1)
-                                    .truncationMode(.middle)    // Keeps the beginning of file
-                                    .font(.system(.body, design: .monospaced))
-                            }
-                        }
-                        .listStyle(.inset)
-                        .alternatingRowBackgrounds() // Adds native macOS zebra striping
             
-                        // NEW: Overlay Block
-                        .overlay {
-                            if status == "Loading..." {
-                                VStack(spacing: 8) {
-                                    Image(systemName: "progress.indicator")
-                                        .font(.system(.largeTitle, design: .rounded))
-                                    Text("Loading files")
-                                        .font(.title3)
-                                        .bold()
-                                }
-                                .offset(y: -50)
-                                
-                                // State 1: Loading
-                            } else if status == "Needs Refresh" {
-                                        VStack(spacing: 8) {
-                                            Image(systemName: "repeat")
-                                            // or .repeat
-                                                .font(.system(.largeTitle, design: .rounded))
-                                            Text("Refresh for files")
-                                                .font(.title3)
-                                                .bold()
-                                        }
-                                        .offset(y: -50)
-                                
-                            } else if status != "Connected" {
-                                
-                                // State 2: ADB Error / Disconnected
-                                VStack(spacing: 8) {
-                                    Image(systemName: "iphone.gen2.slash")
-                                        .font(.system(.largeTitle, design: .rounded))
-                                    Text(status)
-                                        .font(.title3)
-                                        .bold()
-                                }
-                                //.foregroundColor(.secondary)
-                                .offset(y: -50)
-                                
-                            } else if files.isEmpty && status == "Connected" {
-                                
-                                // Fallback for actual empty folders
-                                VStack(spacing: 8) {
-                                    Image(systemName: "folder.badge.minus")
-                                        .font(.system(.largeTitle, design: .rounded))
-                                    Text("This folder is empty, ya goof!")
-                                        .font(.title3)
-                                        .bold()
-                                    }
-                                //.foregroundColor(.secondary)
-                                .offset(y: -50)
-                            }
+            // The main file list with selection support
+            List(filteredFiles, id: \.self, selection: $selectedFiles) { file in
+                HStack {
+                    // Folders get a yellow folder icon, files use your color function
+                    Image(systemName: iconFor(file: file))
+                        .foregroundColor(colorForFile(file: file))
+                    
+                    Text(file.cleanName)
+                        .lineLimit(1)
+                        .truncationMode(.middle)    // Keeps the beginning of file
+                        .font(.system(.body, design: .monospaced))
+                }
+            }
+            .listStyle(.inset)
+            .alternatingRowBackgrounds() // Adds native macOS zebra striping
+            
+            // NEW: Overlay Block
+            .overlay {
+                if status == "Loading..." {
+                    VStack(spacing: 8) {
+                        Image(systemName: "progress.indicator")
+                            .font(.system(.largeTitle, design: .rounded))
+                        Text("Loading files")
+                            .font(.title3)
+                            .bold()
+                    }
+                    .offset(y: -50)
+                    
+                    // State 1: Loading
+                } else if status == "Needs Refresh" {
+                    VStack(spacing: 8) {
+                        Image(systemName: "repeat")
+                            .font(.system(.largeTitle, design: .rounded))
+                        Text("Refresh for files")
+                            .font(.title3)
+                            .bold()
+                    }
+                    .offset(y: -50)
+                    
+                } else if status != "Connected" {
+                    
+                    // State 2: ADB Error / Disconnected
+                    VStack(spacing: 8) {
+                        Image(systemName: "iphone.gen2.slash")
+                            .font(.system(.largeTitle, design: .rounded))
+                        Text(status)
+                            .font(.title3)
+                            .bold()
+                    }
+                    .offset(y: -50)
+                    
+                } else if files.isEmpty && status == "Connected" {
+                    
+                    // Fallback for actual empty folders
+                    VStack(spacing: 8) {
+                        Image(systemName: "folder.badge.minus")
+                            .font(.system(.largeTitle, design: .rounded))
+                        Text("This folder is empty, ya goof!")
+                            .font(.title3)
+                            .bold()
+                    }
+                    .offset(y: -50)
+                }
+            }
+            
+            // The official Apple modifier for macOS List double-clicks and right clicks
+            .contextMenu(forSelectionType: PixelFile.self) { items in
+                
+                // If User has right clicked at least one file
+                if !items.isEmpty {
+                    
+                    // NEW: Get Info Button (Only shows if exactly 1 file is selected)
+                    if items.count == 1, let singleFile = items.first {
+                        Button {
+                            // Trigger the custom SwiftUI overlay!
+                            fileToInspect = singleFile
+                        } label: {
+                            Label("Get Info", systemImage: "info.circle")
                         }
                         
-                        // The official Apple modifier for macOS List double-clicks and right clicks
-                        .contextMenu(forSelectionType: PixelFile.self) { items in
-                            
-                            // If User has right clicked at least one file
-                            if !items.isEmpty {
-                                
-                                // NEW: Get Info Button (Only shows if exactly 1 file is selected
-                                // Note: role: .destructive automatically colors the text red
-                                if items.count == 1, let singleFile = items.first {
-                                    Button {
-                                        fileToInspect = singleFile
-                                        showingFileInfo = true
-                                    } label: {
-                                        Label("Get Info", systemImage: "info.circle")
-                                    }
+                        // NEW Preview Button
+                        if !singleFile.isDirectory {
+                            Button {
+                                if isSafeToPreview(sizeString: singleFile.size) {
+                                    // Trigger your existing loading overlay
+                                    status = "Loading..."
                                     
-                                    Divider() // Adds a native macOS separator line!
-                                }
-                                
-                                // Delete Button
-                                Button(role: .destructive) {
-                                    // Store files and create trip-wire
-                                    itemsToDelete = Array(items)
-                                    showingDeleteConfirmation = true
-                                } label: {
-                                    Label("Delete from Device", systemImage: "trash")
-                                }
-                            }
-                        } primaryAction: { items in
-                            
-                        } // <--  Closes context window
-                        
-                        // The Confirmation Dialog Chain
-                        .confirmationDialog(
-                            "Are you sure you want to these file(s)?",
-                            isPresented: $showingDeleteConfirmation,
-                            titleVisibility: .visible
-                        ) {
-                            Button("Delete Permanently", role: .destructive) {
-                                let pathsToDelete = itemsToDelete.map { "\(currentPath)/\($0.cleanName)" }
-                                
-                                watcher.deleteItems(paths: pathsToDelete) {
-                                    NSSound(named: "Sosumi")?.play()
-                                    self.selectedFiles.removeAll()
-                                    self.refreshCurrentPath()
-                                }
-                            }
-                            
-                            Button("Cancel", role: .cancel) {
-                                itemsToDelete.removeAll()
-                            }
-                        } message: {
-                            Text("This action cannot be undone!")
-                        } // <-- End of .confirmationDialog
-            
-            // The custom "Get Info" pop-up
-                        .alert("File Information", isPresented: $showingFileInfo, presenting: fileToInspect) { _ in
-                            Button("Done", role: .cancel) { }
-                        } message: { file in
-                                        Text("""
-                                        Name: \(file.cleanName)
-                                        Type: \(file.isDirectory ? "Folder" : "File")
-                                        Location: \(currentPath)/\(file.cleanName)
-                                        """)
+                                    watcher.previewFile(at: currentPath, fileName: singleFile.cleanName) { success in
+                                        // Reset UI when finished
+                                        status = "Connected"
                                     }
+                                } else {
+                                    // The file is over 20MB!
+                                    showingPreviewError = true
+                                }
+                            } label: {
+                                Label("Preview", systemImage: "eyes")
+                            }
+                        }
+                        
+                        // NEW Rename Button
+                        Button {
+                            fileToRename = singleFile
+                            newFileName = singleFile.cleanName // Pre-fills with existing name
+                            showingRenameAlert = true
+                        } label: {
+                            Label("Rename", systemImage: "pencil")
+                        }
+                        
+                        Divider() // Adds a native macOS separator line!
+                    }
+                    
+                    // Delete Button
+                    Button(role: .destructive) {
+                        // Store files and create trip-wire
+                        itemsToDelete = Array(items)
+                        showingDeleteConfirmation = true
+                    } label: {
+                        Label("Delete From Device", systemImage: "trash")
+                    }
+                }
+            } primaryAction: { items in
+                guard let file = items.first else { return }
+                
+                // The Fix: Use our new boolean instead of checking for a slash
+                if file.isDirectory {
+                    // NEW: Prevent double slashes like "//sdcard"
+                    if currentPath == "/" {
+                        currentPath += file.cleanName
+                    } else {
+                        currentPath += "/\(file.cleanName)"
+                    }
+                    refreshCurrentPath() // Load function
+                }
+                
+            } // <--  Closes context window
+            
+            // The Confirmation Dialog Chain
+            .confirmationDialog(
+                "Are you sure you want to delete these file(s)?",
+                isPresented: $showingDeleteConfirmation,
+                titleVisibility: .visible
+            ) {
+                Button("Delete Permanently", role: .destructive) {
+                    let pathsToDelete = itemsToDelete.map { "\(currentPath)/\($0.cleanName)" }
+                    
+                    watcher.deleteItems(paths: pathsToDelete) {
+                        if playSound {
+                            NSSound(named: "Sosumi")?.play()
+                        }
+                            self.selectedFiles.removeAll()
+                            self.refreshCurrentPath()
+                    }
+                }
+                
+                Button("Cancel", role: .cancel) {
+                    itemsToDelete.removeAll()
+                }
+            } message: {
+                Text("This action cannot be undone!")
+            } // <-- End of .confirmationDialog
+            
+            // --- Preview Error Alert ---
+            .alert("File Too Large to Preview", isPresented: $showingPreviewError) {
+                Button("OK", role: .cancel) { }
+            } message: {
+                Text("This file is over 20MB. To ensure smooth operation, please download the file to view it.")
+            }
+            
+            // --- The Rename Alert ---
+            .alert("Rename File", isPresented: $showingRenameAlert) {
+                TextField("New name", text: $newFileName)
+                
+                Button("Cancel", role: .cancel) {
+                    fileToRename = nil
+                    newFileName = ""
+                }
+                
+                Button("Rename") {
+                    if let file = fileToRename, !newFileName.isEmpty, newFileName != file.cleanName {
+                        // We will build this backend function next
+                        watcher.renameFile(at: currentPath, oldName: file.cleanName, newName: newFileName) {
+                            // Refresh the UI to show the new name
+                            refreshCurrentPath()
+                        }
+                    }
+                }
+            } message: {
+                Text("Enter a new name for this file or folder.")
+            }
+            
+            // The Ultimate Custom Get Info Window
+            .overlay {
+                if let file = fileToInspect {
+                    // 1. Format the data
+                    let extensionString = (file.cleanName as NSString).pathExtension.uppercased()
+                    let displayType = file.isDirectory ? "Folder" : (extensionString.isEmpty ? "File" : "\(extensionString) File")
+                    let displayPermissions = file.permissions.contains("rw") ? "Read & Write" : (file.permissions.contains("r-") ? "Read Only" : file.permissions)
+                    
+                    // 2. Draw the Floating Window
+                    VStack(spacing: 20) {
+                        
+                        HStack(alignment: .top, spacing: 15) {
+                            // Automatically grabs your Mac app's actual icon!
+                            Image(nsImage: NSApplication.shared.applicationIconImage ?? NSImage())
+                                .resizable()
+                                .frame(width: 60, height: 60)
                             
-            
-            
-            // Spacer() NEW EDIT: remove to create fixed space
+                            VStack(alignment: .leading, spacing: 6) {
+                                Text("File Information")
+                                    .font(.headline)
+                                    .padding(.bottom, 4)
+                                
+                                Text("**Name:** \(file.cleanName)")
+                                Text("**Type:** \(displayType)")
+                                Text("**Size:** \(file.isDirectory ? "--" : file.size)")
+                                Text("**Modified:** \(file.date)")
+                                Text("**Permissions:** \(displayPermissions)")
+                                
+                                Text("**Location:** \(currentPath)/\(file.cleanName)")
+                                    .font(.caption)
+                                    .foregroundColor(.secondary)
+                                    .padding(.top, 4)
+                            }
+                            
+                            Spacer() // <--- NEW: "Spring" to move icon to left
+                        }
+                        
+                        HStack {
+                            Spacer()
+                            Button("OK") {
+                                fileToInspect = nil // Closes the window
+                            }
+                            .keyboardShortcut(.defaultAction) // Lets you hit Return to close
+                            .buttonStyle(.borderedProminent)
+                            .controlSize(.large)
+                            
+                            // NEW: Close button
+                            Spacer()
+                            Button("") {
+                                fileToInspect = nil
+                            }
+                            .keyboardShortcut("w", modifiers: .command)
+                            .hidden()
+                        }
+                    }
+                    .padding(20)
+                    .frame(width: 400) // Wide enough to hold long file paths
+                    .background(.regularMaterial) // Gives the native macOS frosted glass look!
+                    .cornerRadius(12)
+                    .shadow(color: .black.opacity(0.2), radius: 15, x: 0, y: 8)
+                    .overlay(
+                        RoundedRectangle(cornerRadius: 12)
+                            .stroke(Color.gray.opacity(0.2), lineWidth: 1)
+                    )
+                    .offset(y: -75)
+                }
+            } // <--- .overlay ends here
             
             // Progress Bar - only appears during active transfers
             if isDownloading {
@@ -372,7 +569,7 @@ struct ContentView: View {
                 
                 Spacer() // <--- NEW: Test Alignment
                 
-                // --- NEW HIDDEN BUTTON ---
+                // --- HIDDEN BUTTONS ---
                 // Select all CMD + A button
                 Button("") {
                     // Toggle Logic: if everything visible is already selected, deselect it all
@@ -385,6 +582,31 @@ struct ContentView: View {
                 }
                 .keyboardShortcut("a", modifiers: .command)
                 .hidden()
+                // ---
+                // Spacebar to preview
+                Button("") {
+                    // 1. Only trigger if one file is selected
+                    if selectedFiles.count == 1, let singleFile = selectedFiles.first {
+                        
+                        // 2. Check if it's a folder
+                        if !singleFile.isDirectory {
+                            
+                            // 3. Safety check
+                            if isSafeToPreview(sizeString: singleFile.size) {
+                                status = "Loading..."
+                                watcher.previewFile(at: currentPath, fileName: singleFile.cleanName) { success in
+                                    status = "Connected"
+                                }
+                            } else {
+                                showingPreviewError = true
+                            }
+                        }
+                    }
+                }
+                .keyboardShortcut(.space, modifiers: [])
+                .hidden()
+                // ---
+                
                 
                 if isDownloading {
                     // This button only appears during a transfer
@@ -402,8 +624,6 @@ struct ContentView: View {
                         refreshCurrentPath()
                     }
                     
-                   // Spacer() // <-- Separates Left and Right Buttons
-                    
                     // Download Selected Button
                     Button("Download Selected") {
                         isDownloading = true
@@ -420,7 +640,9 @@ struct ContentView: View {
                                     if currentProgress >= 1.0 || watcher.shouldCancel {
                                         self.isDownloading = false
                                         if !watcher.shouldCancel {
-                                            NSSound(named: "Funk")?.play()
+                                            if playSound {
+                                                NSSound(named: "Funk")?.play()
+                                            }
                                         }
                                     }
                                 }
@@ -445,8 +667,9 @@ struct ContentView: View {
                                     if currentProgress >= 1.0 || watcher.shouldCancel {
                                         self.isDownloading = false
                                         if !watcher.shouldCancel {
-                                            // Audio cue for a lead sound tech
-                                            NSSound(named: "Funk")?.play()
+                                            if playSound {
+                                                NSSound(named: "Funk")?.play()
+                                            }
                                         }
                                     }
                                 }
@@ -457,40 +680,8 @@ struct ContentView: View {
                     Spacer() // NEW: <--- Spacer for Download Buttons
                     
                     Button("Upload to Phone") {
-                        let selectedFiles = selectFilesForUpload()
-                        
-                        if !selectedFiles.isEmpty {
-                            // 1. Trigger the progress bar UI
-                            print("User selected \(selectedFiles.count) files for upload.")
-                            // Engine's 'adb push' funtion here
-                            isDownloading = true
-                            downloadProgress = 0.0
-                            
-                            // 2. Move the heavy lifting to a background thread
-                            DispatchQueue.global(qos: .userInitiated).async {
-                                watcher.uploadFiles(fileURLs: selectedFiles, destinationPath: currentPath) { currentProgress in
-                                    
-                                    // 3. Update the UI on the main thread
-                                    DispatchQueue.main.async {
-                                        self.downloadProgress = currentProgress
-                                        
-                                        // 4. Handle completion
-                                        if currentProgress >= 1.0 || watcher.shouldCancel {
-                                            self.isDownloading = false
-                                            
-                                            if !watcher.shouldCancel {
-                                                // Audio cue for success
-                                                NSSound(named: "Funk")?.play()
-                                                // Automatically refresh the folder so new file appears in list
-                                                refreshCurrentPath()
-                                            }
-                                        }
-                                    }
-                                }
-                            }
-                        }
+                        executeUploadProcess()
                     }
-                    
                     .keyboardShortcut("u", modifiers: .command)
                     .buttonStyle(.borderedProminent)
                     .disabled(files.isEmpty || isDownloading)
@@ -510,75 +701,173 @@ struct ContentView: View {
         .sheet(isPresented: $showFAQ) {
             FAQView()
             }
-                
-        } // Closes body variable
-    } // Closes Content View
-    
-    // FAQ SCREEN SETUP
-    struct FAQItem: View {
-        var question: String
-        var answer: String
         
-        var body: some View {
-            VStack(alignment: .leading, spacing: 4) {
-                Text(question)
-                    .font(.headline)
+        // --- NEW: Notification Listening Center ---
+        
+        // RENAME from Menu
+        
+        .onReceive(NotificationCenter.default.publisher(for: .triggerRename)) { _ in
+        // SAFETY: Check if only 1 file is selected
+            if selectedFiles.count == 1, let singleFile = selectedFiles.first {
                 
-                Text(LocalizedStringKey(answer))
-                    .font(.body)
-                    .foregroundColor(.secondary)
-                // Two lines to force the text to wrap
-                    .fixedSize(horizontal: false, vertical: true)
-                    .lineLimit(nil)
+                // Pre-fill the data
+                fileToRename = singleFile
+                newFileName = singleFile.cleanName
+                
+                // Summon alert pop-up
+                showingRenameAlert = true
+                
+                // finish by refreshing
+                refreshCurrentPath()
+                
+            } else {
+                // If user hits rename with 0 or > 1 files selected
+                NSSound.beep()
             }
-            .padding(.bottom, 10)
-        }
-    }
-    
-    // The Main FAQ Window Layout
-    struct FAQView: View {
-        // This allows the view to dismiss itself
-        @Environment(\.dismiss) var dismiss
+        } // --- Close Rename
         
-        var body: some View {
-            VStack(alignment: .leading, spacing: 15) {
-                // Header
-                HStack {
-                    Spacer() // this pushes the close button all the way to the right
-                    
-                    Button("Close") { dismiss() }
-                        .keyboardShortcut(.escape, modifiers: [])
-                }
-                .overlay(
-                    Text("Help & FAQ")
-                        .font(.title2)
-                        .bold()
-                )
-                .padding(.top, 25)
-                .padding(.horizontal, 25)
-                .padding(.bottom, 10)
-                
-                // --- DIVIDER ---
-                Divider()
-                    .padding(.horizontal, 25) // match to text margins !
-                    .padding(.bottom, 5)
-                
-                // Scrollable list of questions
-                ScrollView {
-                    VStack(alignment: .leading, spacing: 20) {
-                        // Loop through the static array in FAQData.swift
-                        ForEach(0..<FAQData.items.count, id: \.self) { index in
-                            FAQItem(
-                                question: FAQData.items[index].q,
-                                answer: FAQData.items[index].a
-                            )
+        // DOWNLOAD from menu
+        
+        .onReceive(NotificationCenter.default.publisher(for: .triggerDownload)) { _ in
+            isDownloading = true
+            downloadProgress = 0.0
+            
+            // Conver set to array
+            let filesToDownload = Array(selectedFiles)
+            
+            DispatchQueue.global(qos: .userInitiated).async {
+                // Pass the array of PixelFiles AND the currentPath
+                watcher.downloadAllFiles(filesToDownload: filesToDownload, sourcePath: currentPath, folderName: folderWithDate) { currentProgress in
+                    DispatchQueue.main.async {
+                        self.downloadProgress = currentProgress
+                        if currentProgress >= 1.0 || watcher.shouldCancel {
+                            self.isDownloading = false
+                            if !watcher.shouldCancel {
+                                if playSound {
+                                    NSSound(named: "Funk")?.play()
+                                }
+                            }
                         }
                     }
-                    .padding(.horizontal, 25)
-                    .padding(.bottom, 20)
                 }
-                .frame(width: 500, height: 450)
             }
+        } // --- Closes Download
+        
+        // DELETE from menu
+        
+        .onReceive(NotificationCenter.default.publisher(for: .triggerDelete)) { _ in
+            
+                // Check if files are selected
+                if !selectedFiles.isEmpty {
+                
+                    // Load the array
+                    itemsToDelete = Array(selectedFiles)
+                    
+                    // Load confirmation
+                    showingDeleteConfirmation = true
+                    
+                } else {
+                    // Play error sound if nothing is selected
+                    NSSound.beep()
+                }
+            
+        } // --- Closes Delete
+        
+        // UPLOAD from menu
+        
+        .onReceive(NotificationCenter.default.publisher(for: .triggerUpload)) { _ in
+            executeUploadProcess()
+        }
+        
+        // --- Closes Upload
+        
+        // GET INFO from menu
+        
+        .onReceive(NotificationCenter.default.publisher(for: .triggerInfo)) { _ in
+            // Safety Check: Only one file is selected
+            if selectedFiles.count == 1, let singleFile = selectedFiles.first {
+                fileToInspect = singleFile
+            } else {
+                NSSound.beep() // Bonk if 0 or > 1 files selected
+            }
+        } // --- Closes Get Info
+        
+        // CANCEL DOWNLOAD from menu
+        
+        .onReceive(NotificationCenter.default.publisher(for: .triggerCancel)) { _ in
+            watcher.shouldCancel = true
+            watcher.cancelDownload()
+            isDownloading = false
+        }
+                
+    } // Closes body variable
+} // Closes Content View
+
+// FAQ SCREEN SETUP
+struct FAQItem: View {
+    var question: String
+    var answer: String
+    
+    var body: some View {
+        VStack(alignment: .leading, spacing: 4) {
+            Text(question)
+                .font(.headline)
+            
+            Text(LocalizedStringKey(answer))
+                .font(.body)
+                .foregroundColor(.secondary)
+            // Two lines to force the text to wrap
+                .fixedSize(horizontal: false, vertical: true)
+                .lineLimit(nil)
+        }
+        .padding(.bottom, 10)
+    }
+}
+
+// The Main FAQ Window Layout
+struct FAQView: View {
+    // This allows the view to dismiss itself
+    @Environment(\.dismiss) var dismiss
+    
+    var body: some View {
+        VStack(alignment: .leading, spacing: 15) {
+            // Header
+            HStack {
+                Spacer() // this pushes the close button all the way to the right
+                
+                Button("Close") { dismiss() }
+                    .keyboardShortcut(.escape, modifiers: [])
+            }
+            .overlay(
+                Text("Help & FAQ")
+                    .font(.title2)
+                    .bold()
+            )
+            .padding(.top, 25)
+            .padding(.horizontal, 25)
+            .padding(.bottom, 10)
+            
+            // --- DIVIDER ---
+            Divider()
+                .padding(.horizontal, 25) // match to text margins !
+                .padding(.bottom, 5)
+            
+            // Scrollable list of questions
+            ScrollView {
+                VStack(alignment: .leading, spacing: 20) {
+                    // Loop through the static array in FAQData.swift
+                    ForEach(0..<FAQData.items.count, id: \.self) { index in
+                        FAQItem(
+                            question: FAQData.items[index].q,
+                            answer: FAQData.items[index].a
+                        )
+                    }
+                }
+                .padding(.horizontal, 25)
+                .padding(.bottom, 20)
+            }
+            .frame(width: 500, height: 450)
         }
     }
+}
 
