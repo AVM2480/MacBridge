@@ -21,13 +21,7 @@ struct FAQData {
             Check both your phone and Mac screens for permission prompts. MacBridge requires these authorizations strictly to enable local data transfers.
             """
         ),
-        (
-            q: "Where are my files saved when I click download?",
-            a: """
-            
-            They are saved to a new folder on your Mac's Desktop, automatically named using today's date and the custom text you entered above.
-            """
-        ),
+        
         (
             q: "How do I select multiple files?",
             a: """
@@ -44,6 +38,22 @@ struct FAQData {
             
             Type a title or an extension (such as .wav or .mp3) into the search field to instantly filter the view for a specific kind of stem or file name.
             """
+        ),
+        (
+            q: "Where are my files saved when I click download?",
+            a: """
+            
+            They are saved to a new folder on your Mac's Desktop, automatically named using today's date and the custom text you entered above.
+            """
+        ),
+        (
+            q: "What happens when I deleted selected files from my device?",
+            a: """
+                
+                Files deleted are permanently destroyed and CANNOT be recovered. Please pay special mind to this when navigating through root system files. Some files stored on your device are not intended for end user modification.
+                
+                **Changing or removing these files may permanently damage your device.** 
+                """
         )
     ]
 }

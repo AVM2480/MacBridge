@@ -7,6 +7,8 @@
 	objects = {
 
 /* Begin PBXBuildFile section */
+		B29A9EDA2F51E26200CFAE37 /* PreferencesView.swift in Sources */ = {isa = PBXBuildFile; fileRef = B29A9ED92F51E24B00CFAE37 /* PreferencesView.swift */; };
+		B2C4254C2F51E4EF00B5981A /* MacBridgeApp.swift in Sources */ = {isa = PBXBuildFile; fileRef = B2C4254B2F51E4E900B5981A /* MacBridgeApp.swift */; };
 		B2CAC0232F4C2FE5000072C7 /* Assets.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = B2CAC01D2F4C2FE5000072C7 /* Assets.xcassets */; };
 		B2CAC0282F4C30F1000072C7 /* MacBridge.swift in Sources */ = {isa = PBXBuildFile; fileRef = B2CAC0272F4C30F1000072C7 /* MacBridge.swift */; };
 		B2CAC02A2F4C3125000072C7 /* ContentView.swift in Sources */ = {isa = PBXBuildFile; fileRef = B2CAC0292F4C3125000072C7 /* ContentView.swift */; };
@@ -32,6 +34,8 @@
 /* End PBXContainerItemProxy section */
 
 /* Begin PBXFileReference section */
+		B29A9ED92F51E24B00CFAE37 /* PreferencesView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PreferencesView.swift; sourceTree = "<group>"; };
+		B2C4254B2F51E4E900B5981A /* MacBridgeApp.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MacBridgeApp.swift; sourceTree = "<group>"; };
 		B2CABFF32F4C2F8D000072C7 /* MacBridge.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = MacBridge.app; sourceTree = BUILT_PRODUCTS_DIR; };
 		B2CAC0002F4C2F8E000072C7 /* MacBridgeTests.xctest */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = MacBridgeTests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
 		B2CAC00A2F4C2F8E000072C7 /* MacBridgeUITests.xctest */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = MacBridgeUITests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
@@ -114,6 +118,8 @@
 		B2CAC0242F4C2FF2000072C7 /* UI */ = {
 			isa = PBXGroup;
 			children = (
+				B2C4254B2F51E4E900B5981A /* MacBridgeApp.swift */,
+				B29A9ED92F51E24B00CFAE37 /* PreferencesView.swift */,
 				B2CAC0292F4C3125000072C7 /* ContentView.swift */,
 				B2CAC02D2F4C32C7000072C7 /* FAQData.swift */,
 			);
@@ -280,6 +286,8 @@
 			buildActionMask = 2147483647;
 			files = (
 				B2CAC02E2F4C32C7000072C7 /* FAQData.swift in Sources */,
+				B2C4254C2F51E4EF00B5981A /* MacBridgeApp.swift in Sources */,
+				B29A9EDA2F51E26200CFAE37 /* PreferencesView.swift in Sources */,
 				B2CAC0282F4C30F1000072C7 /* MacBridge.swift in Sources */,
 				B2CAC02A2F4C3125000072C7 /* ContentView.swift in Sources */,
 			);
