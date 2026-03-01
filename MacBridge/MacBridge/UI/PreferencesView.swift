@@ -6,6 +6,8 @@ struct PreferencesView: View {
     @AppStorage("playSound") private var playSound = true
     @AppStorage("openFinder") private var openFinder = true
     
+    @Environment(\.dismiss) private var dismiss
+    
     var body: some View {
         TabView {
             
@@ -20,6 +22,12 @@ struct PreferencesView: View {
                 Toggle("Open finder window when transfer finishes", isOn: $openFinder)
                 
                 Spacer()
+                
+                Button("Close Window") {
+                    dismiss()
+                }
+                .buttonStyle(.borderedProminent)
+                
             }
             .padding(30)
             .tabItem {
