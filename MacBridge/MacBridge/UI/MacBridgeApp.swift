@@ -8,6 +8,8 @@ extension Notification.Name {
     static let triggerCancel = Notification.Name("triggerCancel")
     static let triggerInfo = Notification.Name("triggerInfo")
     static let triggerUpload = Notification.Name("triggerUpload")
+    static let triggerHelp = Notification.Name("triggerHelp")
+    static let triggerReadme = Notification.Name("triggerReadme")
 }
 
 
@@ -54,11 +56,18 @@ struct MacBridgeApp: App {
             
             // Modify an existing Apple menu (like the "Help" menu)
             CommandGroup(replacing: .help) {
-                Button("MacBridge Documentation") {
-                    // if let url = URL(string: "https://google.com") {
-                    //    NSWorkspace.shared.open(url)
+                Button("MacBridge FAQ") {
+                    NotificationCenter.default.post(name: .triggerHelp, object: nil)
                     }
-                }
+                .keyboardShortcut("y", modifiers: .command)
+                
+                Button("ReadMe") {
+                    NotificationCenter.default.post(name: .triggerReadme, object: nil)
+                    }
+                    .keyboardShortcut("t", modifiers: .command)
+                
+                } // -- end of Help 
+            
             
             CommandGroup(after: .undoRedo) {
                 
@@ -127,5 +136,14 @@ struct MacBridgeApp: App {
         Settings {
             PreferencesView()
         }
-    }
-}
+        
+        // --- NEW: ReadMe Window ---
+        // Use the ID "readmeWindow" to summon it later
+        Window("MacBridge Readme", id: "readmeWindow") {
+            ReadmeView()
+        }
+        // Tells Mac not to stretch beyond current size
+        .windowResizability(.contentSize)
+        
+    } // Closes body
+} // Closes App Struct

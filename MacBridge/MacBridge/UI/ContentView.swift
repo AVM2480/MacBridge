@@ -13,6 +13,9 @@ struct PixelFile: Hashable, Identifiable {
 }
 
 struct ContentView: View {
+    // --- NEW: Window Opener Tool
+    @Environment(\.openWindow) private var openWindow
+    
     // State variables for managing data and UI updates
     @State private var files: [PixelFile] = []
     @State private var status = "Needs Refresh"
@@ -798,7 +801,20 @@ struct ContentView: View {
             watcher.shouldCancel = true
             watcher.cancelDownload()
             isDownloading = false
-        }
+
+        } // --- Closes Download
+        
+        // HELP from menu
+        .onReceive(NotificationCenter.default.publisher(for: .triggerHelp)) { _ in
+            showFAQ = true
+            
+        } // --- Closes Help
+        
+        // ReadMe from menu
+        .onReceive(NotificationCenter.default.publisher(for: .triggerReadme)) { _ in
+            openWindow(id: "readmeWindow")
+            
+        } // --- Closes ReadMe
                 
     } // Closes body variable
 } // Closes Content View
