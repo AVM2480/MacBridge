@@ -1,4 +1,5 @@
 import SwiftUI
+import UniformTypeIdentifiers
 
 struct PixelFile: Hashable, Identifiable {
     var id: String { cleanName } // Uses the file name as its unique ID
@@ -87,36 +88,38 @@ struct ContentView: View {
         }
     }
     
+    // --- TWO FORMS OF UPLOAD ---
+    
+    // --- MANUAL PICKER (Triggered by your menu and  buttons
+    
     func executeUploadProcess() {
-            // 1. Summon the Mac file picker
-            let selectedURLs = selectFilesForUpload()
-            
-            // 2. If the user actually picked files (and didn't hit cancel)
-            if !selectedURLs.isEmpty {
+        // 1. Summon the Mac file picker
+        let selectedURLs = selectFilesForUpload()
+        startUpload(for: selectedURLs)
+    }
+    
+    // --- THE MASTER UPLOAD ENGINE (Accepts files from picker or drag-and-drop
+    
+    func startUpload(for urls: [URL]) {
+        if !urls.isEmpty {
+            // Lock the UI and reset the progress bar
+            isDownloading = true
+            downloadProgress = 0.0
                 
-                // 3. Lock the UI and reset the progress bar
-                isDownloading = true
-                downloadProgress = 0.0
-                
-                // 4. Move to a background thread so the Mac app doesn't freeze!
+                // Move to a background thread so the Mac app doesn't freeze!
                 DispatchQueue.global(qos: .userInitiated).async {
                     
                     // 5. Fire YOUR exact ADB function!
-                    watcher.uploadFiles(fileURLs: selectedURLs, destinationPath: currentPath) { progress in
+                    watcher.uploadFiles(fileURLs: urls, destinationPath: currentPath) { progress in
                         // This closure updates the progress bar safely on the main thread
                         DispatchQueue.main.async {
                             self.downloadProgress = progress
                         }
                     }
                     
-                    // 6. When the ADB transfer completely finishes and the loop exits...
+                   // When finished
                     DispatchQueue.main.async {
-                        // Play the success sound if preference is checked
-                        if playSound {
-                            NSSound(named: "Funk")?.play()
-                        }
-                        
-                        // Unlock the UI and refresh the screen!
+                        if playSound { NSSound(named: "Funk")?.play() }
                         self.isDownloading = false
                         self.refreshCurrentPath()
                     }
@@ -318,6 +321,32 @@ struct ContentView: View {
             }
             .listStyle(.inset)
             .alternatingRowBackgrounds() // Adds native macOS zebra striping
+            
+            // --- NEW: Drag & Drop Zone
+            .onDrop(of: [.fileURL], isTargeted: nil) { providers in
+                var droppedURLs: [URL] = []
+                let group = DispatchGroup()
+                
+                // Loop through everything the user just dropped
+                for provider in providers {
+                    group.enter()
+                    _ = provider.loadObject(ofClass: URL.self) { url, _ in
+                        if let fileURL = url {
+                            DispatchQueue.main.async {
+                                droppedURLs.append(fileURL)
+                            }
+                        }
+                        group.leave()
+                    }
+                }
+                // Fed the dropped files to the master engine
+                group.notify(queue: .main) {
+                    startUpload(for: droppedURLs)
+                }
+                
+                return true
+            }
+            // --- End of drag and drop zone
             
             // NEW: Overlay Block
             .overlay {
@@ -614,7 +643,7 @@ struct ContentView: View {
                 if isDownloading {
                     // This button only appears during a transfer
                     Button("Cancel Download") {
-                        watcher.cancelDownload()
+                        watcher.cancelTransfer()
                         isDownloading = false
                     }
                     .buttonStyle(.borderedProminent)
@@ -799,7 +828,7 @@ struct ContentView: View {
         
         .onReceive(NotificationCenter.default.publisher(for: .triggerCancel)) { _ in
             watcher.shouldCancel = true
-            watcher.cancelDownload()
+            watcher.cancelTransfer()
             isDownloading = false
 
         } // --- Closes Download
