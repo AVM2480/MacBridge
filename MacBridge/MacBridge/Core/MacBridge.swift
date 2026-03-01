@@ -7,6 +7,9 @@ import UniformTypeIdentifiers
 class PixelWatcher {
     // Flag to track if the user wants to stop
     var shouldCancel = false
+    
+    // NEW: Tracks the active terminal command so we can kill it
+    private var activeProcess: Process?
 
     let googleVendorID: Int = 0x18d1
 
@@ -226,6 +229,8 @@ class PixelWatcher {
                 return
             }
             let process = Process()
+            self.activeProcess = process
+            
             process.executableURL = URL(fileURLWithPath: adbPath)
 
             // Now dynamically uses the folder you are currently viewing!
@@ -233,10 +238,14 @@ class PixelWatcher {
         
             try? process.run()
             process.waitUntilExit()
+            
+            self.activeProcess = nil
         
             // Report progress back to the UI
             let currentProgress = Double(index + 1) / Double(filesToDownload.count)
             progressUpdate(currentProgress)
+            
+            
         }
 
         // NEW: Read the user's preferences directly from Mac storage
@@ -251,8 +260,9 @@ class PixelWatcher {
         }
     }
 
-    func cancelDownload() {
+    func cancelTransfer() {
         shouldCancel = true
+        activeProcess?.terminate() // <-- Kills the active upload/download instantly
     }
     
     func uploadFiles(fileURLs: [URL], destinationPath: String, progressHandler: @escaping (Double) -> Void) {
@@ -272,8 +282,9 @@ class PixelWatcher {
             if self.shouldCancel { break }
             
             let process = Process()
-            process.executableURL = URL(fileURLWithPath: adbPath)
+            self.activeProcess = process // <-- 1. Register the process
             
+            process.executableURL = URL(fileURLWithPath: adbPath)
             // The magic command: adb push <mac_file_path> <android_folder_path>
             process.arguments = ["push", url.path, destinationPath]
             
@@ -283,6 +294,8 @@ class PixelWatcher {
             } catch {
                 print("Failed to push \(url.lastPathComponent): \(error)")
             }
+            
+            self.activeProcess = nil
             
             // Update the loading bar
             completedFiles += 1.0
