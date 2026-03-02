@@ -34,15 +34,11 @@ struct PreferencesView: View {
                 Label("General", systemImage: "gearshape")
             }
             
-            // Advanced Settings Tab
-            VStack {
-                Text("Advanced ADB Options")
-                // Return here to build out later
-            }
-            .padding(30)
-            .tabItem {
-                Label("Advanced", systemImage: "terminal")
-            }
+            // --- UPDATED ADVANCED TAB ---
+           AdvancedSettingsView() // <-- Summons new file!
+                .tabItem {
+                    Label("Advanced", systemImage: "terminal")
+                }
             
         } // <--- 1. TabView closes here!
         .frame(width: 450, height: 250) // <--- 2. Frame sizes the whole window safely outside the tabs

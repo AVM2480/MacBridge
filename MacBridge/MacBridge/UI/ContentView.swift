@@ -47,6 +47,10 @@ struct ContentView: View {
     @AppStorage("playSound") private var playSound = true
     @AppStorage("openFinder") private var openFinder = true
     
+    // --- NEW: Custom Routing Var ---
+    @AppStorage("defaultAndroidPath") private var defaultAndroidPath = "/sdcard/Download"
+    @AppStorage("defaultMacExplortFolder") private var defaultMacExplortFolder = "_Pixel_Export"
+    
     let watcher = PixelWatcher()
     
     // Computed property to automatically organize folders by date
@@ -227,7 +231,7 @@ struct ContentView: View {
                 // Home Button
                 Button(action: {
                     // Reset everything to the inital landing state
-                    currentPath = "/sdcard/Download"
+                    currentPath = defaultAndroidPath
                     searchText = ""
                     forwardHistory.removeAll()
                     refreshCurrentPath()
@@ -236,7 +240,7 @@ struct ContentView: View {
                         .font(.title2)
                         .foregroundColor(.secondary)
                 }
-                .disabled(currentPath == "/sdcard/Download")
+                .disabled(currentPath == defaultAndroidPath)
                 .buttonStyle(.plain)
                 
                 // Back Button
@@ -729,6 +733,17 @@ struct ContentView: View {
         
         .padding()
         .frame(minWidth: 550, minHeight: 850) // <-- NEW: Modifiers moved to fix UI
+        
+        // --- NEW: Startup Sequence ---
+        .onAppear {
+            // Inject the user's save preference
+            currentPath = defaultAndroidPath
+            customFolderName = defaultMacExplortFolder
+            
+            // Automatically load the files so user doesn't have to hit refresh
+            refreshCurrentPath()
+        }
+        
         // Sheet modifier
         .sheet(isPresented: $showFAQ) {
             FAQView()
