@@ -16,6 +16,9 @@ extension Notification.Name {
 
 @main
 struct MacBridgeApp: App {
+    
+    @AppStorage("appTheme") private var appTheme = "System"
+    
     // 1. Add this init block to force it to behave like a normal app
     init() {
         NSApplication.shared.setActivationPolicy(.regular)
@@ -24,9 +27,14 @@ struct MacBridgeApp: App {
     var body: some Scene {
         WindowGroup {
             ContentView()
-                // 2. Add this modifier to steal keyboard focus
+            
+                // Add this modifier to steal keyboard focus
                 .onAppear {
                     NSApplication.shared.activate(ignoringOtherApps: true)
+                    applyTheme()
+                }
+                .onChange(of: appTheme) {
+                    applyTheme()
                 }
         }
         // --- 1. EDIT THE TOP MENU BAR ---
@@ -146,4 +154,18 @@ struct MacBridgeApp: App {
         .windowResizability(.contentSize)
         
     } // Closes body
+    
+    // --- NEW: Theme Enforcer ---
+
+    func applyTheme() {
+        if appTheme == "Light" {
+            NSApp.appearance = NSAppearance(named: .aqua)
+        } else if appTheme == "Dark" {
+            NSApp.appearance = NSAppearance(named: .darkAqua)
+        } else {
+            NSApp.appearance = nil
+        }
+    }
+
 } // Closes App Struct
+

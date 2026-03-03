@@ -47,6 +47,8 @@ struct ContentView: View {
     @AppStorage("playSound") private var playSound = true
     @AppStorage("openFinder") private var openFinder = true
     
+    @AppStorage("appTheme") private var appTheme = "System"
+    
     // --- NEW: Custom Routing Var ---
     @AppStorage("defaultAndroidPath") private var defaultAndroidPath = "/sdcard/Download"
     @AppStorage("defaultMacExplortFolder") private var defaultMacExplortFolder = "_Pixel_Export"
@@ -732,7 +734,7 @@ struct ContentView: View {
         } // Closes the main VStack
         
         .padding()
-        .frame(minWidth: 550, minHeight: 850) // <-- NEW: Modifiers moved to fix UI
+        .frame(minWidth: 500, minHeight: 850) // <-- NEW: Modifiers moved to fix UI
         
         // --- NEW: Startup Sequence ---
         .onAppear {
@@ -859,8 +861,10 @@ struct ContentView: View {
             openWindow(id: "readmeWindow")
             
         } // --- Closes ReadMe
-                
+        
+            
     } // Closes body variable
+    
 } // Closes Content View
 
 // FAQ SCREEN SETUP
@@ -926,7 +930,7 @@ struct FAQView: View {
                 .padding(.horizontal, 25)
                 .padding(.bottom, 20)
             }
-            .frame(width: 500, height: 450)
+            .frame(width: 450, height: 450)
         }
     }
 }

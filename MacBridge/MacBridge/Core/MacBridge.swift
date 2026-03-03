@@ -394,6 +394,36 @@ class PixelWatcher {
             try? process.run()
         }
     
+    // -- NEW: Panic Button Engine --
+    
+    func restartADBEngine() {
+        guard let adbPath = getADBPath() else { return }
+        
+        // Move to background thread so the app doesn't freeze during the reboot
+        DispatchQueue.global(qos: .userInitiated).async {
+            
+            // Assassinate the frozen background daemon
+            let killProcess = Process()
+            killProcess.executableURL = URL(fileURLWithPath: adbPath)
+            killProcess.arguments = ["kill-server"]
+            try? killProcess.run()
+            killProcess.waitUntilExit()
+            
+            // Jumpstart a bran new daemon
+            let startProcess = Process()
+            startProcess.executableURL = URL(fileURLWithPath: adbPath)
+            startProcess.arguments = ["start-server"]
+            try? startProcess.run()
+            startProcess.waitUntilExit()
+            
+            // Play a success chime so the user knows it worked
+            DispatchQueue.main.async {
+                let playSound = UserDefaults.standard.object(forKey: "playSound") as? Bool ?? true
+                if playSound { NSSound(named: "Glass")?.play() }
+            }
+        }
+    }
+    
 } // <-- This correctly closes the PixelWatcher class now.
 
 func selectFilesForUpload() -> [URL] {
