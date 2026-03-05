@@ -1,7 +1,9 @@
 import Foundation
 
 struct FAQData {
-    static let items: [(q: String, a: String)] = [
+    
+    // BLOCK 1: General FAQ
+    static let generalItems: [(q: String, a: String)] = [
         (
             q: "What does 'No Device Found' mean?",
             a: """
@@ -55,5 +57,40 @@ struct FAQData {
                 **Changing or removing these files may permanently damage your device.** 
                 """
         )
+    ]
+
+        // BLOCK 2: Wireless FAQ
+        static let wirelessItems: [(q: String, a: String)] = [
+        (
+                    q: "I keep getting an 'error: protocol fault' message!",
+                    a: """
+                    
+                    This usually means one of two things happened:
+                    
+                    •   **Your PIN expired** 
+                    
+                    Android 6-digit pairing PINs are completely temporary and expire after about 2 minutes. 
+                    
+                    Generate a new pairing code on your phone and try again right away.
+                    
+                    •   **The engine froze** 
+                    
+                    Go to the Diagnostics tab in MacBridge and click "Restart ADB Engine" to wipe the slate clean, then try again.
+                    """
+                ),
+                (
+                    q: "It says I'm connected, but my file folder is completely empty!",
+                    a: """
+                    
+                    Sometimes ADB secretly leaves the old pairing connection open alongside your new live connection. Click the red "Disconnect" button, verify your IP and Connection Port are correct, and try again. If the error persists, click "Restart ADB Engine" under the Diagnostics tab and restart.  
+                    """
+                ),
+                (
+                    q: "Why do the Ports keep changing?",
+                    a: """
+                    
+                    For security, Android completely randomizes your connection ports every time you toggle Wi-Fi or "Wireless Debugging". Always double-check the IP and Port listed on your phone's screen right before you hit connect!
+                    """
+                )
     ]
 }

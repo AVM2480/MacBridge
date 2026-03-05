@@ -10,6 +10,7 @@ extension Notification.Name {
     static let triggerUpload = Notification.Name("triggerUpload")
     static let triggerHelp = Notification.Name("triggerHelp")
     static let triggerReadme = Notification.Name("triggerReadme")
+    // static let triggerRefresh = Notification.Name("triggerRefresh")
 }
 
 
@@ -19,9 +20,21 @@ struct MacBridgeApp: App {
     
     @AppStorage("appTheme") private var appTheme = "System"
     
+    @AppStorage("tempConnectionOnly") private var tempConnectionOnly = false
+    @AppStorage("wirelessIP") private var wirelessIP = ""
+    @AppStorage("wirelessPort") private var wirelessPort = "5555"
+    
     // 1. Add this init block to force it to behave like a normal app
     init() {
         NSApplication.shared.setActivationPolicy(.regular)
+        
+    // --- NEW: AMNESIA MODE ---
+        // Forces macOS to forget previous launch states
+        for key in UserDefaults.standard.dictionaryRepresentation().keys {
+            if key.hasPrefix("NSWindow Frame") {
+                UserDefaults.standard.removeObject(forKey: key)
+            }
+        }
     }
 
     var body: some Scene {
@@ -31,12 +44,31 @@ struct MacBridgeApp: App {
                 // Add this modifier to steal keyboard focus
                 .onAppear {
                     NSApplication.shared.activate(ignoringOtherApps: true)
-                    applyTheme()
+                    applyTheme() // Apply theme on launch
                 }
                 .onChange(of: appTheme) {
                     applyTheme()
                 }
+            
+                                // --- NEW: THE QUIT INTERCEPTOR ---
+                                .onReceive(NotificationCenter.default.publisher(for: NSApplication.willTerminateNotification)) { _ in
+                                    // If the user checked the temporary box, wipe everything before shutting down
+                                    if tempConnectionOnly {
+                                        
+                                        // 1. Physically sever the ADB connection to the phone
+                                        let watcher = PixelWatcher()
+                                        watcher.disconnectEverything()
+                                        
+                                        // 2. Erase the IP and Port from the Mac's memory
+                                        wirelessIP = ""
+                                        wirelessPort = "5555"
+                                    }
+                                }
         }
+        // --- NEW: The MAGIC Window Sizer ---
+        // This tells macOS exactly how big to draw the initial window size
+        .defaultSize(width: 750, height: 900)
+        
         // --- 1. EDIT THE TOP MENU BAR ---
         .commands {
             // (Notice we completely removed the rebellious .appSettings override!)

@@ -46,8 +46,11 @@ struct ContentView: View {
     @AppStorage("showHiddenFiles") private var showHiddenFiles = false
     @AppStorage("playSound") private var playSound = true
     @AppStorage("openFinder") private var openFinder = true
-    
     @AppStorage("appTheme") private var appTheme = "System"
+    
+    @AppStorage("wirelessIP") private var wirelessIP = ""
+    @AppStorage("wirelessPort") private var wirelessPort = "5555"
+    @AppStorage("tempConnectionOnly") private var tempConnectionOnly = false
     
     // --- NEW: Custom Routing Var ---
     @AppStorage("defaultAndroidPath") private var defaultAndroidPath = "/sdcard/Download"
@@ -599,7 +602,7 @@ struct ContentView: View {
             
             // Progress Bar - only appears during active transfers
             if isDownloading {
-                ProgressView("Transferring to Desktop...", value: downloadProgress, total: 1.0)
+                ProgressView("Transferring File(s)...", value: downloadProgress, total: 1.0)
                     .padding()
             }
             
@@ -734,10 +737,20 @@ struct ContentView: View {
         } // Closes the main VStack
         
         .padding()
-        .frame(minWidth: 500, minHeight: 850) // <-- NEW: Modifiers moved to fix UI
+        .frame(minWidth: 550, minHeight: 600) // <-- NEW: Modifiers moved to fix UI
         
         // --- NEW: Startup Sequence ---
         .onAppear {
+            // Check if the user wanted a temp connection
+            if tempConnectionOnly {
+                // Wipe the saved variables
+                wirelessIP = ""
+                wirelessPort = "5555"
+                
+                // Fire the slate wiper to kill anything leftover
+                watcher.disconnectEverything()
+            }
+            
             // Inject the user's save preference
             currentPath = defaultAndroidPath
             customFolderName = defaultMacExplortFolder
@@ -862,6 +875,11 @@ struct ContentView: View {
             
         } // --- Closes ReadMe
         
+        .onReceive(NotificationCenter.default.publisher(for: .triggerRefresh)) { _ in
+            // Instantly poll the device for files the second the connection succeeds
+            refreshCurrentPath()
+        }
+        
             
     } // Closes body variable
     
@@ -920,11 +938,36 @@ struct FAQView: View {
             ScrollView {
                 VStack(alignment: .leading, spacing: 20) {
                     // Loop through the static array in FAQData.swift
-                    ForEach(0..<FAQData.items.count, id: \.self) { index in
+                    
+                    // General FAQ array
+                    ForEach(0..<FAQData.generalItems.count, id: \.self) { index in
                         FAQItem(
-                            question: FAQData.items[index].q,
-                            answer: FAQData.items[index].a
+                            question: FAQData.generalItems[index].q,
+                            answer: FAQData.generalItems[index].a
                         )
+                    }
+                    
+                    Divider()
+                    
+                    // --- THE NEW SUBHEADER ---
+                    VStack(alignment: .leading, spacing: 5) {
+                        Spacer()
+                        
+                        
+                        Text("Wireless Connectivity Troubleshooting")
+                            .font(.title3)
+                            .fontWeight(.bold)
+                    }
+                    .padding(.top, 5)
+                    .padding(.bottom, 10)
+                    // --------------------------
+                    
+                    // Wireless FAQ array
+                    ForEach(0..<FAQData.wirelessItems.count, id: \.self) { index in
+                        FAQItem(
+                            question: FAQData.wirelessItems[index].q,
+                            answer: FAQData.wirelessItems[index].a
+                            )
                     }
                 }
                 .padding(.horizontal, 25)
@@ -935,3 +978,7 @@ struct FAQView: View {
     }
 }
 
+// --- GLOBAL NOTIFICATION SIGNALS ---
+extension Notification.Name {
+    static let triggerRefresh = Notification.Name("triggerRefresh")
+}

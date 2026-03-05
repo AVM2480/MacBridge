@@ -252,7 +252,7 @@ class PixelWatcher {
         // default to 'true' to match initial settings window state
         let shouldOpenFinder = UserDefaults.standard.object(forKey: "openFinder") as? Bool ?? true
         
-        // If download finishes naturally, wasn't cancelled, and window option is set to open///
+        // If download finishes naturally, wasn't cancelled, and window option is set to open
         if !shouldCancel && shouldOpenFinder {
             DispatchQueue.main.async {
                 NSWorkspace.shared.selectFile(nil, inFileViewerRootedAtPath: destinationFolder)
@@ -422,6 +422,113 @@ class PixelWatcher {
                 if playSound { NSSound(named: "Glass")?.play() }
             }
         }
+    }
+    
+    // --- NEW: Wireless ADB Engine ---
+    
+    // --- NEW: WIRELESS ADB ENGINE ---
+        func connectWirelessADB(ip: String, port: String, completion: @escaping (Bool, String) -> Void) {
+            
+            guard let adbPath = getADBPath() else {
+                completion(false, "ADB Engine Missing!")
+                return
+            }
+            
+            // --- THE GHOST BUSTER ---
+            // This instantly kills any leftover pairing connections or ghost USB sessions
+            // so ADB knows exactly which single device you want to talk to.
+            let sweepProcess = Process()
+            sweepProcess.executableURL = URL(fileURLWithPath: adbPath)
+            sweepProcess.arguments = ["disconnect"]
+            try? sweepProcess.run()
+            sweepProcess.waitUntilExit()
+            // ------------------------
+            
+            // 1. Format the target address
+            let targetAddress = "\(ip):\(port)"
+            
+            // 2. Setup the hidden terminal process
+            let process = Process()
+            process.executableURL = URL(fileURLWithPath: adbPath)
+            process.arguments = ["connect", targetAddress]
+            
+            // 3. Setup a pipe to catch what ADB says back
+            let pipe = Pipe()
+            process.standardOutput = pipe
+            process.standardError = pipe
+            
+            do {
+                // 4. Fire the command
+                try process.run()
+                process.waitUntilExit()
+                
+                // 5. Read the response
+                let data = pipe.fileHandleForReading.readDataToEndOfFile()
+                if let output = String(data: data, encoding: .utf8)?.trimmingCharacters(in: .whitespacesAndNewlines) {
+                    
+                    let lowerOutput = output.lowercased()
+                    
+                    if lowerOutput.contains("connected") && !lowerOutput.contains("failed") {
+                        completion(true, "Successfully connected to \(targetAddress)")
+                    } else {
+                        completion(false, output) // Pass the exact error back to the user
+                    }
+                } else {
+                    completion(false, "Unknown error occurred.")
+                }
+            } catch {
+                completion(false, "Terminal error: \(error.localizedDescription)")
+            }
+        }
+    
+    // --- NEW: Wireless ADB Pairing with Code ---
+    func pairWirelessADB(ip: String, port: String, code: String, completion: @escaping (Bool, String) -> Void) {
+        let targetAddress = "\(ip):\(port)"
+        
+        let process = Process()
+        
+        guard let adbPath = getADBPath() else {
+            completion(false, "ADB Engine Missing")
+            return
+        }
+        process.executableURL = URL(fileURLWithPath: adbPath)
+        
+        // Pass the address and the 6-digit PIN directyl to ADB
+        process.arguments = ["pair", targetAddress, code]
+        
+        let pipe = Pipe()
+        process.standardOutput = pipe
+        process.standardError = pipe
+        
+        do {
+            try process.run()
+            process.waitUntilExit()
+            
+            let data = pipe.fileHandleForReading.readDataToEndOfFile()
+            let output = String(data: data, encoding: .utf8)?.trimmingCharacters(in: .whitespacesAndNewlines) ?? "Unknown Error"
+            
+            let lowerOutput = output.lowercased()
+            
+            // ADB typically returns "Successfully paired to..." on success
+            if lowerOutput.contains("successfully paired") {
+                completion(true, "Successfully paired! You can now connect.")
+            } else {
+                completion(false, output)
+            }
+        } catch {
+            completion(false, "Terminal error: \(error.localizedDescription)")
+        }
+    }
+    
+    // --- DISCONNECT EVERYTHING ---
+    func disconnectEverything() {
+        guard let adbPath = getADBPath() else { return }
+        let process = Process()
+        process.executableURL = URL(fileURLWithPath: adbPath)
+        process.arguments = ["disconnect"]
+        
+        try? process.run()
+        process.waitUntilExit()
     }
     
 } // <-- This correctly closes the PixelWatcher class now.
