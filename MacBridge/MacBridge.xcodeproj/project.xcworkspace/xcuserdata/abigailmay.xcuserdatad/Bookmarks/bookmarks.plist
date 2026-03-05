@@ -10,15 +10,15 @@
 				<key>location-parameters</key>
 				<dict>
 					<key>EndingColumnNumber</key>
-					<string>6</string>
+					<string>0</string>
 					<key>EndingLineNumber</key>
-					<string>736</string>
+					<string>70</string>
 					<key>StartingColumnNumber</key>
-					<string>6</string>
+					<string>0</string>
 					<key>StartingLineNumber</key>
-					<string>736</string>
+					<string>69</string>
 					<key>Timestamp</key>
-					<string>794195806.0802</string>
+					<string>794363981.303526</string>
 				</dict>
 				<key>rebasable-url</key>
 				<dict>
@@ -27,26 +27,29 @@
 					<key>payload</key>
 					<dict>
 						<key>relative-path</key>
-						<string>MacBridge/UI/ContentView.swift</string>
+						<string>MacBridge/UI/MacBridgeApp.swift</string>
 					</dict>
 				</dict>
 			</dict>
+			<key>is-complete</key>
+			<true/>
 			<key>text-context</key>
 			<dict>
 				<key>focused</key>
-				<string></string>
+				<string>        .defaultSize(width: 750, height: 900)
+</string>
 				<key>leading</key>
-				<string>        
-        .padding()
-      </string>
+				<string>        // --- NEW: The MAGIC Window Sizer ---
+        // This tells macOS exactly how big to draw the initial window size
+</string>
 				<key>trailing</key>
-				<string>  .frame(minWidth: 500, minHeight: 850) // &lt;-- NEW: Modifiers moved to fix UI
-        
-        // --- NEW: Startup Sequence ---
+				<string>        
+        // --- 1. EDIT THE TOP MENU BAR ---
+        .commands {
 </string>
 			</dict>
 			<key>title</key>
-			<string>minWidth &amp; minHeight set</string>
+			<string>Window Launch Size</string>
 			<key>type</key>
 			<string>bookmark</string>
 		</dict>

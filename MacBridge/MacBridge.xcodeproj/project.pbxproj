@@ -7,6 +7,7 @@
 	objects = {
 
 /* Begin PBXBuildFile section */
+		B224896F2F59110C00CA7F43 /* Hero.aiff in Resources */ = {isa = PBXBuildFile; fileRef = B224896E2F59110C00CA7F43 /* Hero.aiff */; };
 		B26402442F55C627004AD8C0 /* AdvancedSettingsView.swift in Sources */ = {isa = PBXBuildFile; fileRef = B26402432F55C627004AD8C0 /* AdvancedSettingsView.swift */; };
 		B2695C822F54053500AECE31 /* Sosumi.aiff in Resources */ = {isa = PBXBuildFile; fileRef = B2695C812F54053500AECE31 /* Sosumi.aiff */; };
 		B2695C842F54053F00AECE31 /* Funk.aiff in Resources */ = {isa = PBXBuildFile; fileRef = B2695C832F54053F00AECE31 /* Funk.aiff */; };
@@ -41,6 +42,7 @@
 /* End PBXContainerItemProxy section */
 
 /* Begin PBXFileReference section */
+		B224896E2F59110C00CA7F43 /* Hero.aiff */ = {isa = PBXFileReference; lastKnownFileType = audio.aiff; path = Hero.aiff; sourceTree = "<group>"; };
 		B26402432F55C627004AD8C0 /* AdvancedSettingsView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AdvancedSettingsView.swift; sourceTree = "<group>"; };
 		B2695C812F54053500AECE31 /* Sosumi.aiff */ = {isa = PBXFileReference; lastKnownFileType = audio.aiff; path = Sosumi.aiff; sourceTree = "<group>"; };
 		B2695C832F54053F00AECE31 /* Funk.aiff */ = {isa = PBXFileReference; lastKnownFileType = audio.aiff; path = Funk.aiff; sourceTree = "<group>"; };
@@ -102,6 +104,7 @@
 			isa = PBXGroup;
 			children = (
 				B2695C812F54053500AECE31 /* Sosumi.aiff */,
+				B224896E2F59110C00CA7F43 /* Hero.aiff */,
 				B2BA59DF2F56638F00AA9AFE /* Glass.aiff */,
 				B2695C852F54056500AECE31 /* Basso.aiff */,
 				B2695C862F54056500AECE31 /* Blow.aiff */,
@@ -291,6 +294,7 @@
 				B2BA59E02F56638F00AA9AFE /* Glass.aiff in Resources */,
 				B2695C872F54056500AECE31 /* Basso.aiff in Resources */,
 				B2695C882F54056500AECE31 /* Blow.aiff in Resources */,
+				B224896F2F59110C00CA7F43 /* Hero.aiff in Resources */,
 				B2695C822F54053500AECE31 /* Sosumi.aiff in Resources */,
 				B2695C842F54053F00AECE31 /* Funk.aiff in Resources */,
 				B2CAC02C2F4C314B000072C7 /* adb in Resources */,

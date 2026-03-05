@@ -41,15 +41,18 @@ struct PreferencesView: View {
                     .frame(width: 300)
                 }
                 
-                Spacer()
+                // Spacer()
+                // Divider()
                 
                 Button("Close Window") {
                     dismiss()
                 }
                 .buttonStyle(.borderedProminent)
+                .padding(.top, 25)
                 
             }
-            .padding(30)
+            .padding([.horizontal, .top], 30)
+            .padding(.bottom, 15)
             .tabItem {
                 Label("General", systemImage: "gearshape")
             }
@@ -63,7 +66,7 @@ struct PreferencesView: View {
                 .tag(1)
             
         } // <--- 1. TabView closes here!
-        .frame(width: 450, height: 350) // <--- 2. Frame sizes the whole window safely outside the tabs
+        .frame(width: 450, height: 400) // <--- 2. Frame sizes the whole window safely outside the tabs
         
         .onAppear {
             activeTab = 0
