@@ -1,0 +1,352 @@
+{\rtf1\ansi\ansicpg1252\cocoartf2822
+\cocoatextscaling0\cocoaplatform0{\fonttbl\f0\froman\fcharset0 TimesNewRomanPS-BoldMT;\f1\froman\fcharset0 TimesNewRomanPSMT;\f2\fswiss\fcharset0 ArialMT;
+\f3\froman\fcharset0 TimesNewRomanPS-ItalicMT;\f4\fswiss\fcharset0 Helvetica;}
+{\colortbl;\red255\green255\blue255;\red0\green0\blue0;\red131\green75\blue106;}
+{\*\expandedcolortbl;;\cssrgb\c0\c0\c0;\cssrgb\c58824\c37647\c49020;}
+\margl1440\margr1440\vieww11520\viewh8400\viewkind0
+\deftab720
+\pard\pardeftab720\sl684\sa11\partightenfactor0
+
+\f0\b\fs64 \cf2 \expnd0\expndtw0\kerning0
+MacBridge: User Manual & Documentation 
+\f1\b0\fs32 \
+\pard\pardeftab720\sl342\sa495\partightenfactor0
+
+\f0\b \cf2 \'a0
+\f1\b0 \
+\pard\pardeftab720\li460\fi-480\sl513\sa167\partightenfactor0
+
+\f0\b\fs48 \cf2 1.
+\f1\b0\fs18\fsmilli9333 \'a0 
+\f0\b\fs48 Overview \
+\pard\pardeftab720\li13\fi-14\sl329\sa354\partightenfactor0
+
+\f1\b0\fs32 \cf2 MacBridge is a native macOS utility designed to eliminate the friction of transferring files between a Mac and an Android device. \
+Instead of relying on slow cloud uploads or clunky web-browser interfaces, MacBridge leverages the Android Debug Bridge (ADB) engine directly in the background. This creates a secure, direct pipeline to your device's internal file system, allowing for fast, reliable file transfers over both physical USB connections and local Wi-Fi networks. \
+\pard\pardeftab720\sl342\sa495\partightenfactor0
+\cf2 \'a0\
+\pard\pardeftab720\li460\fi-480\sl513\sa167\partightenfactor0
+
+\f0\b\fs48 \cf2 2.
+\f1\b0\fs18\fsmilli9333 \'a0 
+\f0\b\fs48 Installation and Initial Setup \
+\pard\pardeftab720\li13\fi-14\sl329\sa355\partightenfactor0
+
+\f1\b0\fs32 \cf2 MacBridge does not require complex installers. \
+\pard\pardeftab720\li940\fi-480\sl329\sa18\partightenfactor0
+\cf2 1.
+\fs18\fsmilli9333 \'a0\'a0\'a0\'a0 
+\fs32 Locate the MacBridge application file (.app). \
+2.
+\fs18\fsmilli9333 \'a0\'a0\'a0\'a0 
+\fs32 Drag and drop the application into your Mac's "Applications" folder. \
+\pard\pardeftab720\li940\fi-480\sl329\sa389\partightenfactor0
+\cf2 3.
+\fs18\fsmilli9333 \'a0\'a0\'a0\'a0 
+\fs32 Double-click to launch. \
+\pard\pardeftab720\fi-14\sl385\sa300\partightenfactor0
+
+\f0\b\fs36 \cf2 macOS Folder Authorization (App Sandbox) \
+\pard\pardeftab720\li13\fi-14\sl329\sa354\partightenfactor0
+
+\f1\b0\fs32 \cf2 To ensure the highest level of privacy and security, MacBridge strictly adheres to the macOS App Sandbox. This means the application has absolutely no access to your Mac's hard drive until you explicitly grant it permission. \
+The first time you attempt to export a file from your Android device to your Mac, MacBridge will prompt you to authorize a Base Directory. \
+\pard\pardeftab720\li940\fi-480\sl274\sa18\partightenfactor0
+
+\f2\fs26\fsmilli13333 \cf2 \'95
+\f1\fs18\fsmilli9333 \'a0\'a0\'a0\'a0\'a0\'a0 
+\fs32 It is highly recommended to select either your standard "Desktop" or "Downloads" folder. \
+
+\f2\fs26\fsmilli13333 \'95
+\f1\fs18\fsmilli9333 \'a0\'a0\'a0\'a0\'a0\'a0 
+\fs32 Do not select the specific sub-folder you want the files to end up in. \
+\pard\pardeftab720\li940\fi-480\sl274\sa347\partightenfactor0
+
+\f2\fs26\fsmilli13333 \cf2 \'95
+\f1\fs18\fsmilli9333 \'a0\'a0\'a0\'a0\'a0\'a0 
+\fs32 Once you authorize a Base Directory (e.g., Desktop), MacBridge will automatically generate a dedicated, date-stamped export folder inside of it for your files. \
+\pard\pardeftab720\li13\fi-14\sl329\sa360\partightenfactor0
+\cf2 You can view, change, or reset your authorized Base Directory at any time by navigating to Preferences > Advanced > Routing. \
+\pard\pardeftab720\sl342\sa495\partightenfactor0
+\cf2 \'a0\
+\pard\pardeftab720\li460\fi-480\sl513\sa167\partightenfactor0
+
+\f0\b\fs48 \cf2 3.
+\f1\b0\fs18\fsmilli9333 \'a0 
+\f0\b\fs48 Android Device Preparation \
+\pard\pardeftab720\li13\fi-14\sl329\sa391\partightenfactor0
+
+\f1\b0\fs32 \cf2 Before MacBridge can communicate with your Android device, you must enable Android's internal debugging tools. This only needs to be done once per device. \
+\pard\pardeftab720\fi-14\sl385\sa300\partightenfactor0
+
+\f0\b\fs36 \cf2 Enabling Developer Options \
+\pard\pardeftab720\li940\fi-480\sl329\sa18\partightenfactor0
+
+\f1\b0\fs32 \cf2 1.
+\fs18\fsmilli9333 \'a0\'a0\'a0\'a0 
+\fs32 Open the "Settings" app on your Android device. \
+2.
+\fs18\fsmilli9333 \'a0\'a0\'a0\'a0 
+\fs32 Scroll to the bottom and tap "About Phone". \
+3.
+\fs18\fsmilli9333 \'a0\'a0\'a0\'a0 
+\fs32 Locate the "Build Number" entry. \
+\pard\pardeftab720\li940\fi-480\sl329\sa400\partightenfactor0
+\cf2 4.
+\fs18\fsmilli9333 \'a0\'a0\'a0\'a0 
+\fs32 Tap "Build Number" 7 times in rapid succession. You will see a small notification stating "You are now a developer!" \
+\pard\pardeftab720\fi-14\sl385\sa300\partightenfactor0
+
+\f0\b\fs36 \cf2 Enabling USB Debugging \
+\pard\pardeftab720\li940\fi-480\sl329\sa18\partightenfactor0
+
+\f1\b0\fs32 \cf2 1.
+\fs18\fsmilli9333 \'a0\'a0\'a0\'a0 
+\fs32 Return to the main Settings menu and navigate to "System" > "Developer Options". \
+2.
+\fs18\fsmilli9333 \'a0\'a0\'a0\'a0 
+\fs32 Scroll down to the "Debugging" section. \
+\pard\pardeftab720\li940\fi-480\sl329\sa357\partightenfactor0
+\cf2 3.
+\fs18\fsmilli9333 \'a0\'a0\'a0\'a0 
+\fs32 Toggle "USB Debugging" to the ON position. \
+\pard\pardeftab720\li960\sl342\sa495\partightenfactor0
+\cf2 \'a0\
+\pard\pardeftab720\li460\fi-480\sl513\sa205\partightenfactor0
+
+\f0\b\fs48 \cf2 4.
+\f1\b0\fs18\fsmilli9333 \'a0 
+\f0\b\fs48 Connecting Your Device \
+\pard\pardeftab720\fi-14\sl385\sa300\partightenfactor0
+
+\fs36 \cf2 Method A: Wired USB Connection (Recommended for large files) \
+\pard\pardeftab720\li940\fi-480\sl316\sa1\partightenfactor0
+
+\f1\b0\fs32 \cf2 1.
+\fs18\fsmilli9333 \'a0\'a0\'a0\'a0 
+\fs32 Connect your Android device to your Mac using a USB cable. 
+\f3\i (Note: Ensure you are using a cable capable of data transfer. Many inexpensive cables provided with battery banks or headphones are "power-only" and will not transmit data to a computer.)
+\f1\i0  \
+\pard\pardeftab720\li940\fi-480\sl329\sa18\partightenfactor0
+\cf2 2.
+\fs18\fsmilli9333 \'a0\'a0\'a0\'a0 
+\fs32 Unlock your Android device's screen. \
+3.
+\fs18\fsmilli9333 \'a0\'a0\'a0\'a0 
+\fs32 A prompt will appear on the Android screen asking: "Allow USB debugging?" It will display a long RSA fingerprint identifying your Mac. \
+4.
+\fs18\fsmilli9333 \'a0\'a0\'a0\'a0 
+\fs32 Check the box labeled "Always allow from this computer" and tap Allow. \
+\pard\pardeftab720\li940\fi-480\sl329\sa395\partightenfactor0
+\cf2 5.
+\fs18\fsmilli9333 \'a0\'a0\'a0\'a0 
+\fs32 MacBridge will instantly recognize the device and populate the file list. \
+\pard\pardeftab720\fi-14\sl385\sa300\partightenfactor0
+
+\f0\b\fs36 \cf2 Method B: Wireless Debugging (Android 11 and newer) \
+\pard\pardeftab720\li13\fi-14\sl329\sa360\partightenfactor0
+
+\f1\b0\fs32 \cf2 You can transfer files without a cable as long as both the Mac and the Android device are connected to the exact same Wi-Fi network. \
+\pard\pardeftab720\li940\fi-480\sl329\sa18\partightenfactor0
+\cf2 1.
+\fs18\fsmilli9333 \'a0\'a0\'a0\'a0 
+\fs32 On your Android device, navigate to Settings > System > Developer Options. \
+2.
+\fs18\fsmilli9333 \'a0\'a0\'a0\'a0 
+\fs32 Toggle "Wireless Debugging" to the ON position. \
+3.
+\fs18\fsmilli9333 \'a0\'a0\'a0\'a0 
+\fs32 Tap the actual text "Wireless Debugging" to enter its specific settings menu. \
+\pard\pardeftab720\li940\fi-480\sl329\sa343\partightenfactor0
+\cf2 4.
+\fs18\fsmilli9333 \'a0\'a0\'a0\'a0 
+\fs32 Open MacBridge on your Mac and navigate to Preferences > Advanced > Wireless. \
+\pard\pardeftab720\li13\fi-14\sl329\sa358\partightenfactor0
+
+\f0\b \cf2 First-Time Pairing:
+\f1\b0  If you have never connected this specific Mac and Android device wirelessly, you must pair them. \
+\pard\pardeftab720\li940\fi-480\sl329\sa18\partightenfactor0
+\cf2 1.
+\fs18\fsmilli9333 \'a0\'a0\'a0\'a0 
+\fs32 In MacBridge, check the "First-Time Pairing Mode" box. \
+2.
+\fs18\fsmilli9333 \'a0\'a0\'a0\'a0 
+\fs32 On your Android device, tap "Pair device with pairing code". \
+3.
+\fs18\fsmilli9333 \'a0\'a0\'a0\'a0 
+\fs32 Enter the exact IP Address, Port, and 6-Digit PIN shown on the Android screen into the MacBridge input fields. \
+\pard\pardeftab720\li940\fi-480\sl329\sa357\partightenfactor0
+\cf2 4.
+\fs18\fsmilli9333 \'a0\'a0\'a0\'a0 
+\fs32 Click "Pair Device". \
+\pard\pardeftab720\li13\fi-14\sl329\sa349\partightenfactor0
+
+\f0\b \cf2 Standard Connection:
+\f1\b0  Once paired, you do not need the PIN again. \
+\pard\pardeftab720\li940\fi-480\sl329\sa18\partightenfactor0
+\cf2 1.
+\fs18\fsmilli9333 \'a0\'a0\'a0\'a0 
+\fs32 Uncheck the "First-Time Pairing Mode" box in MacBridge. \
+2.
+\fs18\fsmilli9333 \'a0\'a0\'a0\'a0 
+\fs32 Enter the standard IP Address and Port displayed on the main Wireless Debugging screen on your Android device. \
+\pard\pardeftab720\li940\fi-480\sl329\sa357\partightenfactor0
+\cf2 3.
+\fs18\fsmilli9333 \'a0\'a0\'a0\'a0 
+\fs32 Click "Connect to Device". \
+\pard\pardeftab720\li960\sl342\sa495\partightenfactor0
+\cf2 \'a0\
+\pard\pardeftab720\li460\fi-480\sl513\sa167\partightenfactor0
+
+\f0\b\fs48 \cf2 5.
+\f1\b0\fs18\fsmilli9333 \'a0 
+\f0\b\fs48 Workflow Optimization: The Dedicated Transfer Pipeline \
+\pard\pardeftab720\li13\fi-14\sl329\sa354\partightenfactor0
+
+\f1\b0\fs32 \cf2 By default, MacBridge is programmed to open your Android device's standard Downloads folder (/sdcard/Download). However, standard download folders quickly become cluttered with PDF attachments, browser saves, and miscellaneous images. \
+\pard\pardeftab720\li13\fi-14\sl329\sa400\partightenfactor0
+\cf2 To maximize the efficiency of MacBridge, it is highly recommended to establish a Permanent Transfer Folder on your Android device. This creates a clean, dedicated pipeline exclusively for moving files between your two ecosystems. \
+\pard\pardeftab720\fi-14\sl385\sa300\partightenfactor0
+
+\f0\b\fs36 \cf2 Android Configuration (Creating the Folder)
+\f1\b0  
+\f0\b \
+\pard\pardeftab720\li940\fi-480\sl329\sa18\partightenfactor0
+
+\f1\b0\fs32 \cf2 1.
+\fs18\fsmilli9333 \'a0\'a0\'a0\'a0 
+\fs32 Open the native File Manager application on your Android device. \
+2.
+\fs18\fsmilli9333 \'a0\'a0\'a0\'a0 
+\fs32 Navigate to your main Internal Storage directory. \
+3.
+\fs18\fsmilli9333 \'a0\'a0\'a0\'a0 
+\fs32 Create a brand new folder and give it a clear, recognizable name (for example: \
+\pard\pardeftab720\li973\fi-14\sl329\sa395\partightenfactor0
+\cf2 "Mac_Transfers" or "MacBridge_Drop"). \
+\pard\pardeftab720\fi-14\sl385\sa300\partightenfactor0
+
+\f0\b\fs36 \cf2 macOS Configuration (Linking MacBridge)
+\f1\b0  
+\f0\b \
+\pard\pardeftab720\li940\fi-480\sl329\sa18\partightenfactor0
+
+\f1\b0\fs32 \cf2 1.
+\fs18\fsmilli9333 \'a0\'a0\'a0\'a0 
+\fs32 On your Mac, open the MacBridge application. \
+2.
+\fs18\fsmilli9333 \'a0\'a0\'a0\'a0 
+\fs32 Press Cmd + , (comma) to open the Preferences window. \
+3.
+\fs18\fsmilli9333 \'a0\'a0\'a0\'a0 
+\fs32 Navigate to the Advanced > Routing tab. \
+\pard\pardeftab720\li940\fi-480\sl329\sa354\partightenfactor0
+\cf2 4.
+\fs18\fsmilli9333 \'a0\'a0\'a0\'a0 
+\fs32 Under the "Default Android Path" setting, replace "/sdcard/Download" with the exact path to your new Android folder (for example: "/sdcard/Mac_Transfers"). \
+\pard\pardeftab720\li13\fi-14\sl329\sa393\partightenfactor0
+\cf2 Once this routing is saved, MacBridge will completely bypass your cluttered downloads and jump straight to your dedicated drop-box every time you connect. \
+\pard\pardeftab720\fi-14\sl385\sa300\partightenfactor0
+
+\f0\b\fs36 \cf2 Daily Workflow (Using the Transfer Folder)
+\f1\b0\fs32 \'a0 
+\f0\b\fs36 \
+\pard\pardeftab720\li13\fi-14\sl329\sa361\partightenfactor0
+
+\f1\b0\fs32 \cf2 Establishing this permanent transfer folder streamlines your daily workflow. It allows you to organize the exact files you wish to transfer in advance, rather than having to manually search through the complex Android file system from your Mac every time. \
+\pard\pardeftab720\sl342\sa340\partightenfactor0
+
+\f0\b \cf2 Recommended Workflow: 
+\f1\b0 \
+\pard\pardeftab720\li940\fi-480\sl329\sa18\partightenfactor0
+\cf2 1.
+\fs18\fsmilli9333 \'a0\'a0\'a0\'a0 
+\fs32 On your Android device, locate the file or files you wish to transfer to macOS. \
+2.
+\fs18\fsmilli9333 \'a0\'a0\'a0\'a0 
+\fs32 Use your Android File Manager's "Move" or "Copy" function to place those files directly into your new "Mac_Transfers" folder. \
+3.
+\fs18\fsmilli9333 \'a0\'a0\'a0\'a0 
+\fs32 Launch MacBridge on your Mac and connect to your device. \
+\pard\pardeftab720\li940\fi-480\sl329\sa361\partightenfactor0
+\cf2 4.
+\fs18\fsmilli9333 \'a0\'a0\'a0\'a0 
+\fs32 Because MacBridge routes to this folder by default, your staged files will be immediately visible and ready to export to your Mac with a single click. \
+\pard\pardeftab720\li960\sl342\sa495\partightenfactor0
+\cf2 \'a0\
+\pard\pardeftab720\li460\fi-480\sl513\sa211\partightenfactor0
+
+\f0\b\fs48 \cf2 6.
+\f1\b0\fs18\fsmilli9333 \'a0 
+\f0\b\fs48 Diagnostics and Troubleshooting \
+\pard\pardeftab720\fi-14\sl385\sa300\partightenfactor0
+
+\fs36 \cf2 The device is physically plugged in, but MacBridge displays "Disconnected".
+\f1\b0  
+\fs32 \
+\pard\pardeftab720\li940\fi-480\sl274\sa18\partightenfactor0
+
+\f2\fs26\fsmilli13333 \cf2 \'95
+\f1\fs18\fsmilli9333 \'a0\'a0\'a0\'a0\'a0\'a0 
+\fs32 \ul Keep the screen awake\ulnone : Ensure your Android phone is unlocked and the screen is actively on. macOS security protocols will routinely block data handshakes with locked devices. 
+\f4\fs26\fsmilli13333 \'95
+\f2  \'a0\'a0\'a0\'a0\'a0\'a0\'a0\'a0\'a0\'a0 
+\f1\fs32 \ul Accept the Authorization Prompt\ulnone : Android requires you to authorize the Mac's RSA Fingerprint before it allows access to the file system. Check your Android screen for a pop-up prompt. If you missed it, unplug the USB cable, wait three seconds, and plug it back in. (Tip: Check the "Always allow from this computer" box to skip this step in the future). \
+\pard\pardeftab720\li940\fi-480\sl274\sa400\partightenfactor0
+
+\f2\fs26\fsmilli13333 \cf2 \'95
+\f1\fs18\fsmilli9333 \'a0\'a0\'a0\'a0\'a0\'a0 
+\fs32 \ul Verify your USB Cable\ulnone : Many inexpensive USB cables (such as those included with headphones or battery banks) are designed for power only and physically lack the internal wires required for data transfer. \
+\pard\pardeftab720\fi-14\sl385\sa300\partightenfactor0
+
+\f0\b\fs36 \cf2 Transfers are permanently freezing or failing to start
+\f1\b0  
+\f0\b \
+\pard\pardeftab720\li13\fi-14\sl329\sa351\partightenfactor0
+
+\f1\b0\fs32 \cf2 If the background connection engine drops packets or is interrupted by a physically loose cable, the background daemon can freeze and lock the port. \
+\pard\pardeftab720\li940\fi-480\sl329\sa18\partightenfactor0
+\cf2 1.
+\fs18\fsmilli9333 \'a0\'a0\'a0\'a0 
+\fs32 In MacBridge, navigate to Preferences > Advanced > Diagnostics. \
+2.
+\fs18\fsmilli9333 \'a0\'a0\'a0\'a0 
+\fs32 Click the "Restart ADB Engine" button. \
+3.
+\fs18\fsmilli9333 \'a0\'a0\'a0\'a0 
+\fs32 This will safely sever all background connections, terminate the frozen daemon, and perform a clean reboot of the engine. \
+\pard\pardeftab720\li940\fi-480\sl329\sa357\partightenfactor0
+\cf2 4.
+\fs18\fsmilli9333 \'a0\'a0\'a0\'a0 
+\fs32 Wait two seconds, then reconnect your device to resume transferring. \
+\pard\pardeftab720\sl342\sa500\partightenfactor0
+
+\f4 \cf2 \'a0
+\f1 \
+\pard\pardeftab720\li460\fi-480\sl513\sa167\partightenfactor0
+
+\f0\b\fs48 \cf2 7.
+\f1\b0\fs18\fsmilli9333 \'a0 
+\f0\b\fs48 Support and Feedback \
+\pard\pardeftab720\li13\fi-14\sl329\sa347\partightenfactor0
+
+\f1\b0\fs32 \cf2 If you encounter an issue not covered in this manual, or if you have a feature request to make your transfer workflow even better, we would love to hear from you. \
+\pard\pardeftab720\li230\fi480\ri1884\sl274\sa18\partightenfactor0
+
+\f2\fs26\fsmilli13333 \cf2 \'95
+\f1\fs18\fsmilli9333 \'a0\'a0 
+\f0\b\fs32 Report a Bug:
+\f1\b0  tablesalt.tools@gmail.com \
+\pard\pardeftab720\li230\fi480\ri1884\sl498\sa121\partightenfactor0
+
+\f2\fs26\fsmilli13333 \cf2 \'95
+\f1\fs18\fsmilli9333 \'a0\'a0 
+\f0\b\fs32 Check for Updates:{\field{\*\fldinst{HYPERLINK "https://github.com/AVM2480/MacBridge"}}{\fldrslt 
+\f1\b0 \ul  \cf3 \ulc3 https://github.com/AVM2480/MacBridge\cf2 \ulc2  }}
+\fs36 Thank you for choosing MacBridge! 
+\f1\b0\fs32 \
+\pard\pardeftab720\sl513\partightenfactor0
+
+\f0\b\fs48 \cf2 \'a0
+\f1\b0\fs32 \
+}
